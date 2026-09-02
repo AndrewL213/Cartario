@@ -21,7 +21,10 @@ export default function Home() {
             <Link href="/editor" className={styles.primaryBtn}>
               Crear una tarjeta
             </Link>
-            <span className={styles.hint}>No necesitas cuenta para probar</span>
+            <span className={styles.hint}>
+              No necesitas cuenta para probar ·{" "}
+              <Link href="/entrar">entra a la tuya</Link>
+            </span>
           </div>
         </div>
 

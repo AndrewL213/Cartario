@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Stage, Layer, Rect, Text, Circle, Transformer } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import { Stage, Layer, Rect, Text, Circle } from "react-konva";
 
 const CARD_WIDTH = 480;
 const CARD_HEIGHT = 620;
@@ -9,24 +9,53 @@ const CARD_HEIGHT = 620;
 let idCounter = 0;
 const nextId = () => `el-${idCounter++}`;
 
-export default function CardCanvas({ isPremiumUnlocked, onRequestUnlock }) {
-  const [elements, setElements] = useState([
-    {
-      id: nextId(),
-      type: "text",
-      x: 90,
-      y: 260,
-      text: "Feliz cumpleaños",
-      fontSize: 32,
-      fontFamily: "Fraunces",
-      fill: "#2a2620",
-      draggable: true,
-    },
-  ]);
+// Si cargamos elementos con ids "el-N", adelantamos el contador para no
+// colisionar con los que se creen después.
+function primeIdCounter(els) {
+  let max = -1;
+  for (const el of els || []) {
+    const m = /^el-(\d+)$/.exec(el?.id || "");
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  if (max >= idCounter) idCounter = max + 1;
+}
+
+const DEFAULT_ELEMENTS = [
+  {
+    id: "el-seed-0",
+    type: "text",
+    x: 90,
+    y: 260,
+    text: "Feliz cumpleaños",
+    fontSize: 32,
+    fontFamily: "Fraunces",
+    fill: "#2a2620",
+    draggable: true,
+  },
+];
+
+export default function CardCanvas({
+  isPremiumUnlocked,
+  onRequestUnlock,
+  initialElements,
+  onElementsChange,
+}) {
+  const [elements, setElements] = useState(() => {
+    const seed =
+      Array.isArray(initialElements) && initialElements.length > 0
+        ? initialElements
+        : DEFAULT_ELEMENTS;
+    primeIdCounter(seed);
+    return seed;
+  });
   const [selectedId, setSelectedId] = useState(null);
-  const trRef = useRef(null);
   const shapeRefs = useRef({});
   const stageRef = useRef(null);
+
+  // Notifica al editor cada vez que cambian los elementos (para autoguardado).
+  useEffect(() => {
+    if (typeof onElementsChange === "function") onElementsChange(elements);
+  }, [elements, onElementsChange]);
 
   const freeStickerColor = "#6e7f5c";
   const premiumStickerColors = ["#b4614f", "#c99a3d", "#5b6ea3"];
@@ -132,6 +161,7 @@ export default function CardCanvas({ isPremiumUnlocked, onRequestUnlock }) {
                     onClick={() => handleSelect(el.id)}
                     onTap={() => handleSelect(el.id)}
                     onDblClick={() => handleTextDblClick(el)}
+                    onDblTap={() => handleTextDblClick(el)}
                     onDragEnd={(e) =>
                       updateElement(el.id, {
                         x: e.target.x(),
@@ -171,7 +201,14 @@ export default function CardCanvas({ isPremiumUnlocked, onRequestUnlock }) {
         </Stage>
       </div>
 
-      <div style={{ minWidth: 220, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div
+        style={{
+          minWidth: 220,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
         <button onClick={addText} style={toolBtn}>
           + Añadir texto
         </button>
@@ -188,8 +225,8 @@ export default function CardCanvas({ isPremiumUnlocked, onRequestUnlock }) {
           Descargar PNG
         </button>
         <p style={{ fontSize: 13, color: "#55503f", lineHeight: 1.5 }}>
-          Doble clic sobre un texto para editarlo. Arrastra cualquier
-          elemento para moverlo.
+          Doble clic sobre un texto para editarlo. Arrastra cualquier elemento
+          para moverlo.
         </p>
       </div>
     </div>

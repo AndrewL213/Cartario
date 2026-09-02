@@ -8,7 +8,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .back {
@@ -17,6 +19,43 @@
   font-size: 18px;
   color: var(--clay);
   text-decoration: none;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.accountLink {
+  color: var(--clay);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.accountLink:focus-visible,
+.back:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--clay);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.linkBtn:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .unlockedBadge {
@@ -31,8 +70,93 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 32px;
-  margin: 0 0 28px;
+  margin: 0 0 20px;
 }
+
+.titleField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.titleLabel {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.titleInput {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(42, 38, 32, 0.2);
+  padding: 4px 2px 8px;
+  max-width: 480px;
+}
+
+.titleInput:focus-visible {
+  outline: none;
+  border-bottom-color: var(--clay);
+}
+
+.saveRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--paper-line);
+}
+
+.saveBtn {
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.saveBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.saveBtn:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+}
+
+.saveState {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.saveStateOk {
+  color: var(--sage-deep);
+}
+
+.saveStateErr {
+  color: var(--clay-deep);
+}
+
+.saveHint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  max-width: 420px;
+}
+
+/* --- modal de desbloqueo ---------------------------------------------------- */
 
 .modalOverlay {
   position: fixed;
@@ -83,6 +207,12 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.modalPrimary:focus-visible,
+.modalSecondary:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
 }
 
 .modalSecondary {
