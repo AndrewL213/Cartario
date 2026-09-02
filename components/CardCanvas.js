@@ -1,246 +1,180 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Stage, Layer, Rect, Text, Circle } from "react-konva";
+import { useEffect, useRef } from "react";
+import { Stage, Layer, Rect, Text, Image as KonvaImage, Transformer } from "react-konva";
+import useImage from "use-image";
 
-const CARD_WIDTH = 480;
-const CARD_HEIGHT = 620;
+export const CARD_WIDTH = 480;
+export const CARD_HEIGHT = 620;
+export const CARD_BG = "#f6f1e4";
 
-let idCounter = 0;
-const nextId = () => `el-${idCounter++}`;
-
-// Si cargamos elementos con ids "el-N", adelantamos el contador para no
-// colisionar con los que se creen después.
-function primeIdCounter(els) {
-  let max = -1;
-  for (const el of els || []) {
-    const m = /^el-(\d+)$/.exec(el?.id || "");
-    if (m) max = Math.max(max, Number(m[1]));
-  }
-  if (max >= idCounter) idCounter = max + 1;
-}
-
-const DEFAULT_ELEMENTS = [
-  {
-    id: "el-seed-0",
-    type: "text",
-    x: 90,
-    y: 260,
-    text: "Feliz cumpleaños",
-    fontSize: 32,
-    fontFamily: "Fraunces",
-    fill: "#2a2620",
-    draggable: true,
-  },
-];
-
-export default function CardCanvas({
-  isPremiumUnlocked,
-  onRequestUnlock,
-  initialElements,
-  onElementsChange,
-}) {
-  const [elements, setElements] = useState(() => {
-    const seed =
-      Array.isArray(initialElements) && initialElements.length > 0
-        ? initialElements
-        : DEFAULT_ELEMENTS;
-    primeIdCounter(seed);
-    return seed;
-  });
-  const [selectedId, setSelectedId] = useState(null);
-  const shapeRefs = useRef({});
-  const stageRef = useRef(null);
-
-  // Notifica al editor cada vez que cambian los elementos (para autoguardado).
-  useEffect(() => {
-    if (typeof onElementsChange === "function") onElementsChange(elements);
-  }, [elements, onElementsChange]);
-
-  const freeStickerColor = "#6e7f5c";
-  const premiumStickerColors = ["#b4614f", "#c99a3d", "#5b6ea3"];
-
-  const addText = () => {
-    const el = {
-      id: nextId(),
-      type: "text",
-      x: 60,
-      y: 100 + elements.length * 10,
-      text: "Escribe aquí",
-      fontSize: 24,
-      fontFamily: "Inter",
-      fill: "#2a2620",
-      draggable: true,
-    };
-    setElements((prev) => [...prev, el]);
-  };
-
-  const addSticker = (premium) => {
-    if (premium && !isPremiumUnlocked) {
-      onRequestUnlock();
-      return;
-    }
-    const color = premium
-      ? premiumStickerColors[
-          Math.floor(Math.random() * premiumStickerColors.length)
-        ]
-      : freeStickerColor;
-    const el = {
-      id: nextId(),
-      type: "sticker",
-      x: 120 + Math.random() * 200,
-      y: 120 + Math.random() * 200,
-      radius: 16,
-      fill: color,
-      draggable: true,
-    };
-    setElements((prev) => [...prev, el]);
-  };
-
-  const updateElement = (id, attrs) => {
-    setElements((prev) =>
-      prev.map((el) => (el.id === id ? { ...el, ...attrs } : el))
-    );
-  };
-
-  const handleSelect = (id) => setSelectedId(id);
-
-  const handleTextDblClick = (el) => {
-    const newText = window.prompt("Editar texto", el.text);
-    if (newText !== null) {
-      updateElement(el.id, { text: newText });
-    }
-  };
-
-  const handleExport = () => {
-    if (!stageRef.current) return;
-    const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
-    const link = document.createElement("a");
-    link.download = "tarjeta.png";
-    link.href = uri;
-    link.click();
-  };
-
+// Imagen (sticker o subida) como nodo de Konva.
+function CanvasImage({ el, draggable, onSelect, onChange, onTransformEnd, refCb }) {
+  const [img] = useImage(el.src, "anonymous");
   return (
-    <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
-      <div>
-        <Stage
-          width={CARD_WIDTH}
-          height={CARD_HEIGHT}
-          ref={stageRef}
-          onMouseDown={(e) => {
-            if (e.target === e.target.getStage()) setSelectedId(null);
-          }}
-          style={{
-            background: "#f6f1e4",
-            border: "1px solid rgba(42,38,32,0.12)",
-            borderRadius: 4,
-          }}
-        >
-          <Layer>
-            <Rect
-              x={0}
-              y={0}
-              width={CARD_WIDTH}
-              height={CARD_HEIGHT}
-              fill="#f6f1e4"
-            />
-            {elements.map((el) => {
-              if (el.type === "text") {
-                return (
-                  <Text
-                    key={el.id}
-                    id={el.id}
-                    text={el.text}
-                    x={el.x}
-                    y={el.y}
-                    fontSize={el.fontSize}
-                    fontFamily={el.fontFamily}
-                    fill={el.fill}
-                    draggable
-                    onClick={() => handleSelect(el.id)}
-                    onTap={() => handleSelect(el.id)}
-                    onDblClick={() => handleTextDblClick(el)}
-                    onDblTap={() => handleTextDblClick(el)}
-                    onDragEnd={(e) =>
-                      updateElement(el.id, {
-                        x: e.target.x(),
-                        y: e.target.y(),
-                      })
-                    }
-                    ref={(node) => {
-                      if (node) shapeRefs.current[el.id] = node;
-                    }}
-                  />
-                );
-              }
-              return (
-                <Circle
-                  key={el.id}
-                  id={el.id}
-                  x={el.x}
-                  y={el.y}
-                  radius={el.radius}
-                  fill={el.fill}
-                  draggable
-                  onClick={() => handleSelect(el.id)}
-                  onTap={() => handleSelect(el.id)}
-                  onDragEnd={(e) =>
-                    updateElement(el.id, {
-                      x: e.target.x(),
-                      y: e.target.y(),
-                    })
-                  }
-                  ref={(node) => {
-                    if (node) shapeRefs.current[el.id] = node;
-                  }}
-                />
-              );
-            })}
-          </Layer>
-        </Stage>
-      </div>
-
-      <div
-        style={{
-          minWidth: 220,
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
-        <button onClick={addText} style={toolBtn}>
-          + Añadir texto
-        </button>
-        <button onClick={() => addSticker(false)} style={toolBtn}>
-          + Sticker básico
-        </button>
-        <button
-          onClick={() => addSticker(true)}
-          style={{ ...toolBtn, borderColor: "#b4614f", color: "#954c3d" }}
-        >
-          + Sticker premium {!isPremiumUnlocked && "🔒"}
-        </button>
-        <button onClick={handleExport} style={{ ...toolBtn, marginTop: 12 }}>
-          Descargar PNG
-        </button>
-        <p style={{ fontSize: 13, color: "#55503f", lineHeight: 1.5 }}>
-          Doble clic sobre un texto para editarlo. Arrastra cualquier elemento
-          para moverlo.
-        </p>
-      </div>
-    </div>
+    <KonvaImage
+      image={img}
+      id={el.id}
+      x={el.x}
+      y={el.y}
+      width={el.width}
+      height={el.height}
+      rotation={el.rotation || 0}
+      scaleX={el.scaleX || 1}
+      scaleY={el.scaleY || 1}
+      offsetX={el.width / 2}
+      offsetY={el.height / 2}
+      draggable={draggable}
+      onClick={() => onSelect(el.id)}
+      onTap={() => onSelect(el.id)}
+      onDragEnd={(e) =>
+        onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
+      }
+      onTransformEnd={() => onTransformEnd(el)}
+      ref={refCb}
+    />
   );
 }
 
-const toolBtn = {
-  padding: "10px 16px",
-  fontSize: 14,
-  fontWeight: 500,
-  borderRadius: 4,
-  border: "1px solid rgba(42,38,32,0.2)",
-  background: "#fff",
-  color: "#2a2620",
-  cursor: "pointer",
-  textAlign: "left",
-};
+export default function CardCanvas({
+  elements,
+  selectedId,
+  onSelect,
+  onChange,
+  onEditText,
+  stageRef,
+}) {
+  const nodeRefs = useRef({});
+  const trRef = useRef(null);
+
+  // Adjunta el Transformer al nodo seleccionado.
+  useEffect(() => {
+    const tr = trRef.current;
+    if (!tr) return;
+    const node = selectedId ? nodeRefs.current[selectedId] : null;
+    tr.nodes(node ? [node] : []);
+    tr.getLayer()?.batchDraw();
+  }, [selectedId, elements]);
+
+  const setRef = (id) => (node) => {
+    if (node) nodeRefs.current[id] = node;
+    else delete nodeRefs.current[id];
+  };
+
+  const handleTransformEnd = (el) => {
+    const node = nodeRefs.current[el.id];
+    if (!node) return;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    node.scaleX(1);
+    node.scaleY(1);
+
+    if (el.type === "text") {
+      onChange(
+        el.id,
+        {
+          x: node.x(),
+          y: node.y(),
+          rotation: node.rotation(),
+          fontSize: Math.max(8, Math.round((el.fontSize || 24) * scaleY)),
+          width: Math.max(24, Math.round((el.width || 240) * scaleX)),
+        },
+        { commit: true }
+      );
+    } else {
+      onChange(
+        el.id,
+        {
+          x: node.x(),
+          y: node.y(),
+          rotation: node.rotation(),
+          scaleX: (el.scaleX || 1) * scaleX,
+          scaleY: (el.scaleY || 1) * scaleY,
+        },
+        { commit: true }
+      );
+    }
+  };
+
+  const clearIfEmpty = (e) => {
+    if (e.target === e.target.getStage()) onSelect(null);
+  };
+
+  return (
+    <Stage
+      width={CARD_WIDTH}
+      height={CARD_HEIGHT}
+      ref={stageRef}
+      onMouseDown={clearIfEmpty}
+      onTouchStart={clearIfEmpty}
+      style={{
+        background: CARD_BG,
+        border: "1px solid rgba(42,38,32,0.12)",
+        borderRadius: 4,
+        touchAction: "none",
+      }}
+    >
+      <Layer>
+        <Rect x={0} y={0} width={CARD_WIDTH} height={CARD_HEIGHT} fill={CARD_BG} listening={false} />
+
+        {elements.map((el) => {
+          if (el.type === "text") {
+            return (
+              <Text
+                key={el.id}
+                id={el.id}
+                text={el.text}
+                x={el.x}
+                y={el.y}
+                width={el.width || 240}
+                rotation={el.rotation || 0}
+                fontSize={el.fontSize}
+                fontFamily={el.fontFamily}
+                fontStyle={el.fontStyle || "normal"}
+                align={el.align || "left"}
+                fill={el.fill}
+                draggable
+                onClick={() => onSelect(el.id)}
+                onTap={() => onSelect(el.id)}
+                onDblClick={() => onEditText(el.id)}
+                onDblTap={() => onEditText(el.id)}
+                onDragEnd={(e) =>
+                  onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
+                }
+                onTransformEnd={() => handleTransformEnd(el)}
+                ref={setRef(el.id)}
+              />
+            );
+          }
+          // sticker | image
+          return (
+            <CanvasImage
+              key={el.id}
+              el={el}
+              draggable
+              onSelect={onSelect}
+              onChange={onChange}
+              onTransformEnd={handleTransformEnd}
+              refCb={setRef(el.id)}
+            />
+          );
+        })}
+
+        <Transformer
+          ref={trRef}
+          rotateEnabled
+          keepRatio
+          flipEnabled={false}
+          anchorSize={10}
+          anchorStroke="#b4614f"
+          anchorFill="#fff"
+          borderStroke="#b4614f"
+          borderDash={[4, 3]}
+          boundBoxFunc={(oldBox, newBox) =>
+            newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
+          }
+        />
+      </Layer>
+    </Stage>
+  );
+}
