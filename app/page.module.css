@@ -1,0 +1,161 @@
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 72px 32px 96px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 64px;
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+.kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--clay);
+  margin: 0 0 18px;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 56px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 0 0 24px;
+  max-width: 11ch;
+}
+
+@media (max-width: 640px) {
+  .headline {
+    font-size: 38px;
+  }
+}
+
+.sub {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 46ch;
+  margin: 0 0 32px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.primaryBtn {
+  display: inline-block;
+  background: var(--ink);
+  color: var(--cream);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  padding: 14px 26px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.primaryBtn:hover {
+  background: var(--clay-deep);
+}
+
+.hint {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.heroCard {
+  display: flex;
+  justify-content: center;
+}
+
+.cardMock {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 5 / 6.5;
+  background: var(--cream-deep);
+  border: 1px solid var(--paper-line);
+  border-radius: 3px;
+  box-shadow: 6px 6px 0 var(--paper-line);
+  transform: rotate(-2deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.cardMockNote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 28px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.stickerA {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--sage);
+  opacity: 0.85;
+}
+
+.stickerB {
+  position: absolute;
+  bottom: 22px;
+  left: 20px;
+  width: 26px;
+  height: 26px;
+  background: var(--clay);
+  opacity: 0.8;
+  transform: rotate(20deg);
+}
+
+.details {
+  margin-top: 120px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  border-top: 1px solid var(--paper-line);
+  padding-top: 48px;
+}
+
+@media (max-width: 760px) {
+  .details {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detailTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  margin: 0 0 12px;
+}
+
+.detailBody {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0;
+}
