@@ -17,8 +17,8 @@ export const CARD_WIDTH = 480;
 export const CARD_HEIGHT = 620;
 export const CARD_BG = "#f6f1e4";
 
-// Fondo de la tarjeta: color base + patrón repetido opcional.
-function CardBackground({ bgId }) {
+// Fondo de la tarjeta: color base (o color propio) + patrón repetido opcional.
+function CardBackground({ bgId, bgColor }) {
   const bg = BG_BY_ID[bgId] || BG_BY_ID.plain;
   const dataUrl = useMemo(() => backgroundTileDataUrl(bg), [bg]);
   const [tile] = useImage(dataUrl || "");
@@ -29,7 +29,7 @@ function CardBackground({ bgId }) {
         y={0}
         width={CARD_WIDTH}
         height={CARD_HEIGHT}
-        fill={bg.base}
+        fill={bgColor || bg.base}
         listening={false}
       />
       {tile && (
@@ -90,6 +90,7 @@ function CanvasImage({ el, onSelect, onChange, onTransformEnd, refCb }) {
 export default function CardCanvas({
   elements,
   background,
+  backgroundColor,
   selectedId,
   onSelect,
   onChange,
@@ -123,7 +124,7 @@ export default function CardCanvas({
     if (layer) {
       layer.draw(); // escena + hit, síncrono
     }
-  }, [elements, selectedId, background]);
+  }, [elements, selectedId, background, backgroundColor]);
 
   const handleTransformEnd = (el) => {
     const node = nodeRefs.current[el.id];
@@ -178,7 +179,7 @@ export default function CardCanvas({
       }}
     >
       <Layer>
-        <CardBackground bgId={background} />
+        <CardBackground bgId={background} bgColor={backgroundColor} />
 
         {elements.map((el) => {
           if (el.type === "text") {

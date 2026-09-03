@@ -371,6 +371,37 @@
   white-space: nowrap;
 }
 
+/* --- tamaño de texto ---------------------------------------------------- */
+
+.sizeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sizeRange {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--clay);
+}
+
+.sizeNumber {
+  width: 52px;
+  padding: 6px 6px;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid rgba(42, 38, 32, 0.25);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.sizeNumber:focus-visible,
+.sizeRange:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+}
+
 .stickerBtn {
   position: relative;
   aspect-ratio: 1;

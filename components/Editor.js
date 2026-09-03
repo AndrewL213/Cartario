@@ -20,6 +20,7 @@ import {
   getCard,
   elementsFromRow,
   backgroundFromRow,
+  backgroundColorFromRow,
 } from "../lib/cards";
 import { uploadCardImage } from "../lib/storage";
 import { useEditorHistory } from "../lib/useEditorHistory";
@@ -38,7 +39,19 @@ const FREE_IMAGE_LIMIT = 3; // imágenes propias por tarjeta antes del muro
 const CARD_H = 620;
 const DEFAULT_TITLE = "Tarjeta sin título";
 const INK = "#2a2620";
-const TEXT_COLORS = ["#2a2620", "#b4614f", "#6e7f5c", "#c99a3d", "#5b6ea3", "#ffffff"];
+const TEXT_COLORS = [
+  "#2a2620", // tinta
+  "#55503f", // tinta suave
+  "#b4614f", // arcilla
+  "#954c3d", // arcilla oscura
+  "#6e7f5c", // salvia
+  "#566349", // salvia oscura
+  "#c99a3d", // mostaza
+  "#5b6ea3", // azul
+  "#8a5a86", // ciruela
+  "#f6f1e4", // crema
+  "#ffffff", // blanco
+];
 
 const genId = () =>
   `el-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -58,6 +71,7 @@ export default function Editor() {
 
   const [selectedId, setSelectedId] = useState(null);
   const [background, setBackground] = useState(DEFAULT_BG);
+  const [backgroundColor, setBackgroundColor] = useState(null); // null = base del preset
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
@@ -104,12 +118,14 @@ export default function Editor() {
               title: pending.title,
               elements: pending.elements,
               background: pending.background,
+              backgroundColor: pending.backgroundColor,
             });
             clearDraft();
             setCardId(row.id);
             setTitle(row.title);
             reset(elementsFromRow(row));
             setBackground(backgroundFromRow(row));
+            setBackgroundColor(backgroundColorFromRow(row));
             setSaveState("saved");
             router.replace(`/editor?id=${row.id}`);
             setLoading(false);
@@ -135,6 +151,7 @@ export default function Editor() {
             setTitle(row.title || "");
             reset(elementsFromRow(row));
             setBackground(backgroundFromRow(row));
+            setBackgroundColor(backgroundColorFromRow(row));
             setLoading(false);
             return;
           }
@@ -151,6 +168,7 @@ export default function Editor() {
         setTitle(draft.title || "");
         reset(draft.elements);
         setBackground(draft.background || DEFAULT_BG);
+        setBackgroundColor(draft.backgroundColor || null);
       } else {
         reset([]);
       }
@@ -163,11 +181,11 @@ export default function Editor() {
     if (loading) return;
     if (user && cardId) return;
     const t = setTimeout(
-      () => saveDraft({ title, elements, background }),
+      () => saveDraft({ title, elements, background, backgroundColor }),
       600
     );
     return () => clearTimeout(t);
-  }, [title, elements, background, loading, user, cardId]);
+  }, [title, elements, background, backgroundColor, loading, user, cardId]);
 
   // Repinta el lienzo cuando terminan de cargar las webfonts (Konva mide el
   // texto al pintar; si la fuente aún no está, sale con la de reserva).
@@ -366,13 +384,32 @@ export default function Editor() {
     const bg = BACKGROUNDS.find((b) => b.id === id);
     if (bg?.premium && !requirePremium()) return;
     setBackground(id);
+    setBackgroundColor(null); // vuelve al color base del preset elegido
     markDirty();
   };
 
+  const currentBg = BACKGROUNDS.find((b) => b.id === background) || BACKGROUNDS[0];
+  const bgColorValue = backgroundColor || currentBg.base;
+
+  const changeBackgroundColor = (hex) => {
+    setBackgroundColor(hex);
+    markDirty();
+  };
+
+  const clampSize = (n) => Math.min(160, Math.max(8, Math.round(n) || 8));
+
   const changeSize = (delta) => {
     if (!selectedEl) return;
-    const next = Math.min(200, Math.max(8, (selectedEl.fontSize || 24) + delta));
-    patchElement(selectedId, { fontSize: next }, { commit: true });
+    patchElement(
+      selectedId,
+      { fontSize: clampSize((selectedEl.fontSize || 24) + delta) },
+      { commit: true }
+    );
+  };
+
+  const setSize = (value, doCommit) => {
+    if (!selectedEl) return;
+    patchElement(selectedId, { fontSize: clampSize(value) }, { commit: doCommit });
   };
 
   // edición de texto en el panel: agrupa la tanda en un solo "deshacer"
@@ -396,7 +433,7 @@ export default function Editor() {
     const supabase = getSupabaseBrowser();
     if (!supabase) return;
     if (!user) {
-      setPendingSave({ title, elements, background });
+      setPendingSave({ title, elements, background, backgroundColor });
       router.push(`/entrar?next=${encodeURIComponent("/editor?restore=1")}`);
       return;
     }
@@ -407,6 +444,7 @@ export default function Editor() {
           title,
           elements,
           background,
+          backgroundColor,
         });
         setTitle(row.title);
       } else {
@@ -414,6 +452,7 @@ export default function Editor() {
           title,
           elements,
           background,
+          backgroundColor,
         });
         setCardId(row.id);
         setTitle(row.title);
@@ -520,6 +559,7 @@ export default function Editor() {
             <CardCanvas
               elements={elements}
               background={background}
+              backgroundColor={backgroundColor}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onChange={patchElement}
@@ -605,6 +645,31 @@ export default function Editor() {
                     </button>
                   );
                 })}
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.fieldLabel}>Color del fondo</span>
+                <div className={styles.swatches}>
+                  <input
+                    type="color"
+                    className={styles.colorInput}
+                    value={bgColorValue}
+                    onChange={(e) => changeBackgroundColor(e.target.value)}
+                    aria-label="Color del fondo"
+                  />
+                  {backgroundColor && (
+                    <button
+                      type="button"
+                      className={styles.linkBtn}
+                      onClick={() => {
+                        setBackgroundColor(null);
+                        markDirty();
+                      }}
+                    >
+                      color original
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -739,22 +804,44 @@ export default function Editor() {
                       </div>
 
                       <div className={styles.field}>
-                        <span className={styles.fieldLabel}>Tamaño</span>
-                        <div className={styles.iconRow}>
+                        <span className={styles.fieldLabel}>
+                          Tamaño · {selectedEl.fontSize || 24} px
+                        </span>
+                        <div className={styles.sizeRow}>
                           <button
                             type="button"
                             className={styles.iconBtn}
                             onClick={() => changeSize(-2)}
+                            aria-label="Más pequeño"
                           >
                             A−
                           </button>
+                          <input
+                            type="range"
+                            className={styles.sizeRange}
+                            min={8}
+                            max={160}
+                            value={selectedEl.fontSize || 24}
+                            onChange={(e) => setSize(e.target.value, false)}
+                            onPointerUp={(e) => setSize(e.target.value, true)}
+                            onKeyUp={(e) => setSize(e.currentTarget.value, true)}
+                          />
                           <button
                             type="button"
                             className={styles.iconBtn}
                             onClick={() => changeSize(2)}
+                            aria-label="Más grande"
                           >
                             A+
                           </button>
+                          <input
+                            type="number"
+                            className={styles.sizeNumber}
+                            min={8}
+                            max={160}
+                            value={selectedEl.fontSize || 24}
+                            onChange={(e) => setSize(e.target.value, true)}
+                          />
                         </div>
                       </div>
 
