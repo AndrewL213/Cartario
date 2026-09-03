@@ -27,6 +27,7 @@ import { useEditorHistory } from "../lib/useEditorHistory";
 import { STICKERS } from "../lib/stickers";
 import { FONTS, FONT_BY_VALUE, DEFAULT_FONT } from "../lib/fonts";
 import { BACKGROUNDS, DEFAULT_BG } from "../lib/backgrounds";
+import { showRewardedAd } from "../lib/ads";
 import styles from "../app/editor/editor.module.css";
 
 const CardCanvas = dynamic(() => import("./CardCanvas"), {
@@ -84,6 +85,8 @@ export default function Editor() {
     images: false,
   });
   const [adCategory, setAdCategory] = useState(null); // categoría que abrió el modal
+  const [adPlaying, setAdPlaying] = useState(false);
+  const [adSecondsLeft, setAdSecondsLeft] = useState(0);
 
   const has = (cat) => isSubscriber || unlocked[cat];
 
@@ -506,19 +509,31 @@ export default function Editor() {
     });
   };
 
-  // --- anuncio (simulado hasta la Fase 3) ---------------------------
+  // --- anuncio recompensado (ver lib/ads.js) -----------------------
   const AD_LABELS = {
     stickers: "los stickers premium",
     fonts: "las tipografías premium",
     backgrounds: "los fondos premium",
     images: "subir imágenes sin límite",
   };
-  const handleWatchAd = () => {
+  const handleWatchAd = async () => {
     const cat = adCategory;
-    setTimeout(() => {
-      if (cat) setUnlocked((u) => ({ ...u, [cat]: true }));
+    if (!cat || adPlaying) return;
+    setAdPlaying(true);
+    setAdSecondsLeft(4);
+    try {
+      const { rewarded } = await showRewardedAd(cat, {
+        onTick: (ms) => setAdSecondsLeft(Math.ceil(ms / 1000)),
+      });
+      if (rewarded) setUnlocked((u) => ({ ...u, [cat]: true }));
+    } finally {
+      setAdPlaying(false);
       setAdCategory(null);
-    }, 1200);
+    }
+  };
+  const closeAdModal = () => {
+    if (adPlaying) return;
+    setAdCategory(null);
   };
 
   const saveLabel = !user
@@ -552,6 +567,11 @@ export default function Editor() {
           {configured && user && (
             <>
               <span>{user.email}</span>
+              {!isSubscriber && (
+                <Link href="/precios" className={styles.accountLink}>
+                  Sin anuncios
+                </Link>
+              )}
               <Link href="/mis-tarjetas" className={styles.accountLink}>
                 Mis tarjetas
               </Link>
@@ -1012,25 +1032,53 @@ export default function Editor() {
           aria-labelledby="ad-modal-title"
         >
           <div className={styles.modal}>
-            <h2 id="ad-modal-title" className={styles.modalTitle}>
-              Desbloquea {AD_LABELS[adCategory]}
-            </h2>
-            <p className={styles.modalBody}>
-              Mira un anuncio corto para desbloquear {AD_LABELS[adCategory]} en
-              esta tarjeta. O suscríbete para no ver anuncios y tener toda la
-              biblioteca —además de poder subir tus propias fuentes y stickers.
-            </p>
-            <div className={styles.modalActions}>
-              <button onClick={handleWatchAd} className={styles.modalPrimary}>
-                Ver anuncio
-              </button>
-              <button
-                onClick={() => setAdCategory(null)}
-                className={styles.modalSecondary}
-              >
-                Ahora no
-              </button>
-            </div>
+            {adPlaying ? (
+              <>
+                <h2 id="ad-modal-title" className={styles.modalTitle}>
+                  Reproduciendo anuncio…
+                </h2>
+                <p className={styles.modalBody}>
+                  {adSecondsLeft > 0
+                    ? `${adSecondsLeft} s para desbloquear ${AD_LABELS[adCategory]}.`
+                    : `Desbloqueando ${AD_LABELS[adCategory]}…`}
+                </p>
+                <div className={styles.adBar} aria-hidden="true">
+                  <span
+                    className={styles.adBarFill}
+                    style={{ width: `${((4 - adSecondsLeft) / 4) * 100}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="ad-modal-title" className={styles.modalTitle}>
+                  Desbloquea {AD_LABELS[adCategory]}
+                </h2>
+                <p className={styles.modalBody}>
+                  Mira un anuncio corto para desbloquear {AD_LABELS[adCategory]}{" "}
+                  en esta tarjeta.{" "}
+                  <Link href="/precios" className={styles.accountLink}>
+                    O suscríbete
+                  </Link>{" "}
+                  para no ver anuncios y tener toda la biblioteca —además de
+                  poder subir tus propias fuentes y stickers.
+                </p>
+                <div className={styles.modalActions}>
+                  <button
+                    onClick={handleWatchAd}
+                    className={styles.modalPrimary}
+                  >
+                    Ver anuncio
+                  </button>
+                  <button
+                    onClick={closeAdModal}
+                    className={styles.modalSecondary}
+                  >
+                    Ahora no
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

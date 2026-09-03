@@ -61,7 +61,7 @@ export default function Home() {
           <p className={styles.detailBody}>
             Las herramientas básicas no cuestan nada. Los extras se
             desbloquean viendo un anuncio corto o con una suscripción baja,
-            tú eliges.
+            tú eliges. <Link href="/precios">Ver precios</Link>.
           </p>
         </div>
       </section>

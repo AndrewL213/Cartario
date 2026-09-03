@@ -1,0 +1,139 @@
+.main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 56px 32px 96px;
+}
+
+.back {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--clay);
+  text-decoration: none;
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 34px;
+  margin: 28px 0 10px;
+}
+
+.lead {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 52ch;
+  margin: 0 0 40px;
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .plans {
+    grid-template-columns: 1fr;
+  }
+}
+
+.plan {
+  border: 1px solid var(--paper-line);
+  border-radius: 8px;
+  padding: 24px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.planFeatured {
+  border-color: var(--clay);
+  box-shadow: 0 0 0 1px var(--clay);
+}
+
+.planName {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  margin: 0;
+}
+
+.price {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.price strong {
+  font-size: 26px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.features li::before {
+  content: "·  ";
+  color: var(--clay);
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.subscribeBtn {
+  margin-top: 4px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--cream);
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.subscribeBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.subscribeBtn:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+}
+
+.currentBtn {
+  margin-top: 4px;
+  padding: 12px 18px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  align-self: flex-start;
+}
+
+.note {
+  margin-top: 32px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}

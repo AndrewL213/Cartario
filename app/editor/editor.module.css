@@ -660,3 +660,17 @@
   cursor: pointer;
   color: var(--ink-soft);
 }
+
+.adBar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(42, 38, 32, 0.12);
+  overflow: hidden;
+}
+
+.adBarFill {
+  display: block;
+  height: 100%;
+  background: var(--clay);
+  transition: width 0.2s linear;
+}
