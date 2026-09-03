@@ -75,8 +75,17 @@ export default function Editor() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
-  const [isPremiumUnlocked, setPremiumUnlocked] = useState(false);
-  const [showAdModal, setShowAdModal] = useState(false);
+  // Desbloqueo por categoría (por tarjeta). El suscriptor lo tiene todo.
+  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [unlocked, setUnlocked] = useState({
+    stickers: false,
+    fonts: false,
+    backgrounds: false,
+    images: false,
+  });
+  const [adCategory, setAdCategory] = useState(null); // categoría que abrió el modal
+
+  const has = (cat) => isSubscriber || unlocked[cat];
 
   const history = useEditorHistory([]);
   const { elements, commit, replace, checkpoint, undo, redo, reset, canUndo, canRedo } =
@@ -107,6 +116,14 @@ export default function Editor() {
         const { data } = await supabase.auth.getUser();
         currentUser = data?.user || null;
         setUser(currentUser);
+        if (currentUser) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("is_subscriber")
+            .eq("id", currentUser.id)
+            .maybeSingle();
+          setIsSubscriber(!!prof?.is_subscriber);
+        }
       }
 
       // guardado pendiente tras magic link
@@ -265,14 +282,14 @@ export default function Editor() {
       fill: INK,
     });
 
-  const requirePremium = () => {
-    if (isPremiumUnlocked) return true;
-    setShowAdModal(true);
+  const requireUnlock = (cat) => {
+    if (has(cat)) return true;
+    setAdCategory(cat);
     return false;
   };
 
   const addSticker = (sticker) => {
-    if (sticker.premium && !requirePremium()) return;
+    if (sticker.premium && !requireUnlock("stickers")) return;
     addElement({
       type: "sticker",
       src: sticker.src,
@@ -289,7 +306,7 @@ export default function Editor() {
     () => elements.filter((e) => e.type === "image").length,
     [elements]
   );
-  const imagesLocked = !isPremiumUnlocked && imageCount >= FREE_IMAGE_LIMIT;
+  const imagesLocked = !has("images") && imageCount >= FREE_IMAGE_LIMIT;
 
   const handlePickImage = () => {
     if (!user) {
@@ -297,7 +314,7 @@ export default function Editor() {
       return;
     }
     if (imagesLocked) {
-      setShowAdModal(true);
+      setAdCategory("images");
       return;
     }
     setUploadError("");
@@ -311,7 +328,7 @@ export default function Editor() {
     const supabase = getSupabaseBrowser();
     if (!supabase || !user) return;
     if (imagesLocked) {
-      setShowAdModal(true);
+      setAdCategory("images");
       return;
     }
 
@@ -369,7 +386,7 @@ export default function Editor() {
 
   const changeFont = (value) => {
     const font = FONT_BY_VALUE[value];
-    if (font?.premium && !requirePremium()) return;
+    if (font?.premium && !requireUnlock("fonts")) return;
     patchElement(selectedId, { fontFamily: value }, { commit: true });
     // asegura que la fuente esté descargada y repinta el lienzo
     if (typeof document !== "undefined" && document.fonts) {
@@ -382,7 +399,7 @@ export default function Editor() {
 
   const changeBackground = (id) => {
     const bg = BACKGROUNDS.find((b) => b.id === id);
-    if (bg?.premium && !requirePremium()) return;
+    if (bg?.premium && !requireUnlock("backgrounds")) return;
     setBackground(id);
     setBackgroundColor(null); // vuelve al color base del preset elegido
     markDirty();
@@ -490,10 +507,17 @@ export default function Editor() {
   };
 
   // --- anuncio (simulado hasta la Fase 3) ---------------------------
+  const AD_LABELS = {
+    stickers: "los stickers premium",
+    fonts: "las tipografías premium",
+    backgrounds: "los fondos premium",
+    images: "subir imágenes sin límite",
+  };
   const handleWatchAd = () => {
+    const cat = adCategory;
     setTimeout(() => {
-      setPremiumUnlocked(true);
-      setShowAdModal(false);
+      if (cat) setUnlocked((u) => ({ ...u, [cat]: true }));
+      setAdCategory(null);
     }, 1200);
   };
 
@@ -510,8 +534,20 @@ export default function Editor() {
           ← Papelera
         </Link>
         <div className={styles.account}>
-          {isPremiumUnlocked && (
-            <span className={styles.unlockedBadge}>Extras desbloqueados</span>
+          {isSubscriber ? (
+            <span className={styles.unlockedBadge}>Plan sin anuncios</span>
+          ) : (
+            ["stickers", "fonts", "backgrounds", "images"].some(
+              (c) => unlocked[c]
+            ) && (
+              <span className={styles.unlockedBadge}>
+                Desbloqueado:{" "}
+                {["stickers", "fonts", "backgrounds", "images"]
+                  .filter((c) => unlocked[c])
+                  .map((c) => ({ stickers: "stickers", fonts: "fuentes", backgrounds: "fondos", images: "imágenes" }[c]))
+                  .join(" · ")}
+              </span>
+            )
           )}
           {configured && user && (
             <>
@@ -606,7 +642,7 @@ export default function Editor() {
                   gratis funcionan sin registrarse.
                 </p>
               )}
-              {user && !isPremiumUnlocked && (
+              {user && !has("images") && (
                 <p className={styles.uploadNote}>
                   {Math.min(imageCount, FREE_IMAGE_LIMIT)}/{FREE_IMAGE_LIMIT}{" "}
                   imágenes gratis en esta tarjeta.
@@ -619,11 +655,11 @@ export default function Editor() {
             {/* fondo */}
             <div className={styles.group}>
               <p className={styles.groupTitle}>
-                Fondo {!isPremiumUnlocked && "· 🔒 = premium"}
+                Fondo {!has("backgrounds") && "· 🔒 = premium"}
               </p>
               <div className={styles.bgGrid}>
                 {BACKGROUNDS.map((b) => {
-                  const locked = b.premium && !isPremiumUnlocked;
+                  const locked = b.premium && !has("backgrounds");
                   const active = background === b.id;
                   return (
                     <button
@@ -676,11 +712,11 @@ export default function Editor() {
             {/* stickers */}
             <div className={styles.group}>
               <p className={styles.groupTitle}>
-                Stickers {!isPremiumUnlocked && "· 🔒 = premium"}
+                Stickers {!has("stickers") && "· 🔒 = premium"}
               </p>
               <div className={styles.stickerGrid}>
                 {STICKERS.map((s) => {
-                  const locked = s.premium && !isPremiumUnlocked;
+                  const locked = s.premium && !has("stickers");
                   return (
                     <button
                       key={s.id}
@@ -797,7 +833,7 @@ export default function Editor() {
                           {FONTS.map((f) => (
                             <option key={f.value} value={f.value}>
                               {f.label} — {f.note}
-                              {f.premium && !isPremiumUnlocked ? " 🔒" : ""}
+                              {f.premium && !has("fonts") ? " 🔒" : ""}
                             </option>
                           ))}
                         </select>
@@ -968,7 +1004,7 @@ export default function Editor() {
         )}
       </div>
 
-      {showAdModal && (
+      {adCategory && (
         <div
           className={styles.modalOverlay}
           role="dialog"
@@ -977,19 +1013,19 @@ export default function Editor() {
         >
           <div className={styles.modal}>
             <h2 id="ad-modal-title" className={styles.modalTitle}>
-              Desbloquea los extras premium
+              Desbloquea {AD_LABELS[adCategory]}
             </h2>
             <p className={styles.modalBody}>
-              Mira un anuncio corto para desbloquear, en esta tarjeta, los
-              stickers y tipografías premium y las imágenes propias sin límite.
-              También puedes suscribirte para no ver anuncios.
+              Mira un anuncio corto para desbloquear {AD_LABELS[adCategory]} en
+              esta tarjeta. O suscríbete para no ver anuncios y tener toda la
+              biblioteca —además de poder subir tus propias fuentes y stickers.
             </p>
             <div className={styles.modalActions}>
               <button onClick={handleWatchAd} className={styles.modalPrimary}>
                 Ver anuncio
               </button>
               <button
-                onClick={() => setShowAdModal(false)}
+                onClick={() => setAdCategory(null)}
                 className={styles.modalSecondary}
               >
                 Ahora no
