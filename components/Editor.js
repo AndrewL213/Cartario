@@ -14,11 +14,18 @@ import {
   setPendingSave,
   takePendingSave,
 } from "../lib/localCard";
-import { createCard, updateCard, getCard, elementsFromRow } from "../lib/cards";
+import {
+  createCard,
+  updateCard,
+  getCard,
+  elementsFromRow,
+  backgroundFromRow,
+} from "../lib/cards";
 import { uploadCardImage } from "../lib/storage";
 import { useEditorHistory } from "../lib/useEditorHistory";
 import { STICKERS } from "../lib/stickers";
 import { FONTS, FONT_BY_VALUE, DEFAULT_FONT } from "../lib/fonts";
+import { BACKGROUNDS, DEFAULT_BG } from "../lib/backgrounds";
 import styles from "../app/editor/editor.module.css";
 
 const CardCanvas = dynamic(() => import("./CardCanvas"), {
@@ -50,6 +57,7 @@ export default function Editor() {
   const [saveState, setSaveState] = useState("idle"); // idle | saving | saved | error
 
   const [selectedId, setSelectedId] = useState(null);
+  const [background, setBackground] = useState(DEFAULT_BG);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
@@ -95,11 +103,13 @@ export default function Editor() {
             const row = await createCard(supabase, currentUser.id, {
               title: pending.title,
               elements: pending.elements,
+              background: pending.background,
             });
             clearDraft();
             setCardId(row.id);
             setTitle(row.title);
             reset(elementsFromRow(row));
+            setBackground(backgroundFromRow(row));
             setSaveState("saved");
             router.replace(`/editor?id=${row.id}`);
             setLoading(false);
@@ -124,6 +134,7 @@ export default function Editor() {
             setCardId(row.id);
             setTitle(row.title || "");
             reset(elementsFromRow(row));
+            setBackground(backgroundFromRow(row));
             setLoading(false);
             return;
           }
@@ -139,6 +150,7 @@ export default function Editor() {
       if (draft) {
         setTitle(draft.title || "");
         reset(draft.elements);
+        setBackground(draft.background || DEFAULT_BG);
       } else {
         reset([]);
       }
@@ -150,9 +162,19 @@ export default function Editor() {
   useEffect(() => {
     if (loading) return;
     if (user && cardId) return;
-    const t = setTimeout(() => saveDraft({ title, elements }), 600);
+    const t = setTimeout(
+      () => saveDraft({ title, elements, background }),
+      600
+    );
     return () => clearTimeout(t);
-  }, [title, elements, loading, user, cardId]);
+  }, [title, elements, background, loading, user, cardId]);
+
+  // Repinta el lienzo cuando terminan de cargar las webfonts (Konva mide el
+  // texto al pintar; si la fuente aún no está, sale con la de reserva).
+  useEffect(() => {
+    if (typeof document === "undefined" || !document.fonts) return;
+    document.fonts.ready.then(() => stageRef.current?.batchDraw());
+  }, []);
 
   // --- atajos de teclado ----------------------------------------------
   useEffect(() => {
@@ -189,19 +211,34 @@ export default function Editor() {
     [commit, replace]
   );
 
-  const addElement = (el) => {
-    commit((els) => [...els, el]);
-    setSelectedId(el.id);
+  // Añade un elemento. `base` no lleva x/y: la posición se calcula DENTRO del
+  // updater con la longitud real, para que varios "añadir" seguidos no se
+  // apilen exactamente encima (si no, solo el de arriba se puede seleccionar).
+  const addElement = (base) => {
+    const id = genId();
+    commit((els) => {
+      const n = els.length;
+      let x;
+      let y;
+      if (base.type === "text") {
+        const k = n % 8;
+        x = 56 + k * 16;
+        y = 74 + k * 20;
+      } else {
+        const k = (n % 6) - 2.5;
+        x = CARD_W / 2 + k * 22;
+        y = CARD_H / 2 + k * 22;
+      }
+      return [...els, { ...base, id, x, y }];
+    });
+    setSelectedId(id);
     markDirty();
   };
 
   const addText = () =>
     addElement({
-      id: genId(),
       type: "text",
       text: "Escribe aquí",
-      x: 70,
-      y: 90,
       width: 260,
       rotation: 0,
       fontSize: 30,
@@ -219,12 +256,9 @@ export default function Editor() {
   const addSticker = (sticker) => {
     if (sticker.premium && !requirePremium()) return;
     addElement({
-      id: genId(),
       type: "sticker",
       src: sticker.src,
       stickerId: sticker.id,
-      x: CARD_W / 2,
-      y: CARD_H / 2,
       width: 96,
       height: 96,
       rotation: 0,
@@ -271,11 +305,8 @@ export default function Editor() {
       const w = Math.min(220, dims.width || 200);
       const h = Math.round(w * ((dims.height || 200) / (dims.width || 200)));
       addElement({
-        id: genId(),
         type: "image",
         src: url,
-        x: CARD_W / 2,
-        y: CARD_H / 2,
         width: w,
         height: h,
         rotation: 0,
@@ -322,6 +353,20 @@ export default function Editor() {
     const font = FONT_BY_VALUE[value];
     if (font?.premium && !requirePremium()) return;
     patchElement(selectedId, { fontFamily: value }, { commit: true });
+    // asegura que la fuente esté descargada y repinta el lienzo
+    if (typeof document !== "undefined" && document.fonts) {
+      document.fonts
+        .load(`24px "${value}"`)
+        .then(() => stageRef.current?.batchDraw())
+        .catch(() => {});
+    }
+  };
+
+  const changeBackground = (id) => {
+    const bg = BACKGROUNDS.find((b) => b.id === id);
+    if (bg?.premium && !requirePremium()) return;
+    setBackground(id);
+    markDirty();
   };
 
   const changeSize = (delta) => {
@@ -351,17 +396,25 @@ export default function Editor() {
     const supabase = getSupabaseBrowser();
     if (!supabase) return;
     if (!user) {
-      setPendingSave({ title, elements });
+      setPendingSave({ title, elements, background });
       router.push(`/entrar?next=${encodeURIComponent("/editor?restore=1")}`);
       return;
     }
     setSaveState("saving");
     try {
       if (cardId) {
-        const row = await updateCard(supabase, cardId, { title, elements });
+        const row = await updateCard(supabase, cardId, {
+          title,
+          elements,
+          background,
+        });
         setTitle(row.title);
       } else {
-        const row = await createCard(supabase, user.id, { title, elements });
+        const row = await createCard(supabase, user.id, {
+          title,
+          elements,
+          background,
+        });
         setCardId(row.id);
         setTitle(row.title);
         clearDraft();
@@ -466,6 +519,7 @@ export default function Editor() {
           <div className={styles.canvasWrap}>
             <CardCanvas
               elements={elements}
+              background={background}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onChange={patchElement}
@@ -522,6 +576,38 @@ export default function Editor() {
               {uploadError && <p className={styles.errorNote}>{uploadError}</p>}
             </div>
 
+            {/* fondo */}
+            <div className={styles.group}>
+              <p className={styles.groupTitle}>
+                Fondo {!isPremiumUnlocked && "· 🔒 = premium"}
+              </p>
+              <div className={styles.bgGrid}>
+                {BACKGROUNDS.map((b) => {
+                  const locked = b.premium && !isPremiumUnlocked;
+                  const active = background === b.id;
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      className={`${styles.bgBtn} ${active ? styles.bgBtnActive : ""}`}
+                      onClick={() => changeBackground(b.id)}
+                      title={locked ? `${b.label} (premium)` : b.label}
+                    >
+                      <span
+                        className={styles.bgSwatch}
+                        style={{ background: b.base }}
+                        data-bg={b.id}
+                      />
+                      <span className={styles.bgLabel}>
+                        {b.label}
+                        {locked && " 🔒"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* stickers */}
             <div className={styles.group}>
               <p className={styles.groupTitle}>
@@ -573,6 +659,38 @@ export default function Editor() {
                 </button>
               </div>
             </div>
+
+            {/* capas: lista para seleccionar cualquier elemento aunque esté tapado */}
+            {elements.length > 0 && (
+              <div className={styles.group}>
+                <p className={styles.groupTitle}>Capas</p>
+                <ul className={styles.layerList}>
+                  {elements
+                    .map((el, i) => ({ el, i }))
+                    .reverse()
+                    .map(({ el }) => (
+                      <li key={el.id}>
+                        <button
+                          type="button"
+                          className={`${styles.layerRow} ${
+                            selectedId === el.id ? styles.layerRowActive : ""
+                          }`}
+                          onClick={() => setSelectedId(el.id)}
+                        >
+                          <span className={styles.layerName}>
+                            {el.type === "text"
+                              ? el.text || "Texto"
+                              : el.type === "image"
+                              ? "Imagen"
+                              : STICKERS.find((s) => s.id === el.stickerId)?.label ||
+                                "Sticker"}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
 
             {/* propiedades del elemento seleccionado */}
             <div className={styles.group}>

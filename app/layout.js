@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
           crossOrigin="true"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=Caveat:wght@400;600;700&family=Special+Elite&family=Shadows+Into+Light&family=Gaegu:wght@300;400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=Caveat:wght@400;600;700&family=Patrick+Hand&family=Kalam:wght@300;400;700&family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Shadows+Into+Light&family=Gaegu:wght@300;400;700&family=Amatic+SC:wght@400;700&family=Parisienne&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,500&display=swap"
           rel="stylesheet"
         />
       </head>

@@ -229,6 +229,148 @@
   padding-right: 4px;
 }
 
+/* --- fondos --------------------------------------------------------------- */
+
+.bgGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.bgBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(42, 38, 32, 0.18);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.bgBtn:hover {
+  border-color: var(--clay);
+}
+
+.bgBtnActive {
+  border-color: var(--clay);
+  box-shadow: 0 0 0 1px var(--clay);
+}
+
+.bgBtn:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+}
+
+.bgSwatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  border: 1px solid rgba(42, 38, 32, 0.15);
+  flex: none;
+  background-repeat: repeat;
+}
+
+.bgSwatch[data-bg="grid"] {
+  background-image:
+    linear-gradient(rgba(42, 38, 32, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 38, 32, 0.18) 1px, transparent 1px);
+  background-size: 7px 7px;
+}
+
+.bgSwatch[data-bg="dots"] {
+  background-image: radial-gradient(rgba(42, 38, 32, 0.3) 1.2px, transparent 1.3px);
+  background-size: 7px 7px;
+}
+
+.bgSwatch[data-bg="lines"] {
+  background-image: linear-gradient(rgba(42, 38, 32, 0.18) 1px, transparent 1px);
+  background-size: 100% 8px;
+}
+
+.bgSwatch[data-bg="graph"] {
+  background-image:
+    linear-gradient(rgba(110, 127, 92, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 127, 92, 0.35) 1px, transparent 1px);
+  background-size: 5px 5px;
+}
+
+.bgSwatch[data-bg="iso"] {
+  background-image:
+    linear-gradient(45deg, rgba(42, 38, 32, 0.16) 1px, transparent 1px),
+    linear-gradient(-45deg, rgba(42, 38, 32, 0.16) 1px, transparent 1px);
+  background-size: 7px 7px;
+}
+
+.bgSwatch[data-bg="kraft"] {
+  background-image:
+    linear-gradient(rgba(42, 38, 32, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 38, 32, 0.15) 1px, transparent 1px);
+  background-size: 7px 7px;
+}
+
+.bgSwatch[data-bg="ledger"] {
+  background-image:
+    linear-gradient(rgba(42, 38, 32, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(180, 97, 79, 0.45) 1px, transparent 1px);
+  background-size: 100% 8px, 10px 100%;
+}
+
+.bgLabel {
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+/* --- capas -------------------------------------------------------------- */
+
+.layerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.layerRow {
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border: 1px solid rgba(42, 38, 32, 0.15);
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.layerRow:hover {
+  border-color: var(--clay);
+}
+
+.layerRowActive {
+  border-color: var(--clay);
+  box-shadow: 0 0 0 1px var(--clay);
+}
+
+.layerRow:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+}
+
+.layerName {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .stickerBtn {
   position: relative;
   aspect-ratio: 1;

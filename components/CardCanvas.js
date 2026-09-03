@@ -1,29 +1,70 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Stage, Layer, Rect, Text, Image as KonvaImage, Transformer } from "react-konva";
+import { useEffect, useMemo, useRef } from "react";
+import {
+  Stage,
+  Layer,
+  Rect,
+  Text,
+  Group,
+  Image as KonvaImage,
+  Transformer,
+} from "react-konva";
 import useImage from "use-image";
+import { BG_BY_ID, backgroundTileDataUrl } from "../lib/backgrounds";
 
 export const CARD_WIDTH = 480;
 export const CARD_HEIGHT = 620;
 export const CARD_BG = "#f6f1e4";
 
-// Imagen (sticker o subida) como nodo de Konva.
+// Fondo de la tarjeta: color base + patrón repetido opcional.
+function CardBackground({ bgId }) {
+  const bg = BG_BY_ID[bgId] || BG_BY_ID.plain;
+  const dataUrl = useMemo(() => backgroundTileDataUrl(bg), [bg]);
+  const [tile] = useImage(dataUrl || "");
+  return (
+    <>
+      <Rect
+        x={0}
+        y={0}
+        width={CARD_WIDTH}
+        height={CARD_HEIGHT}
+        fill={bg.base}
+        listening={false}
+      />
+      {tile && (
+        <Rect
+          x={0}
+          y={0}
+          width={CARD_WIDTH}
+          height={CARD_HEIGHT}
+          fillPatternImage={tile}
+          fillPatternRepeat="repeat"
+          fillPatternScaleX={0.5}
+          fillPatternScaleY={0.5}
+          listening={false}
+        />
+      )}
+    </>
+  );
+}
+
+// Sticker o imagen subida. Va dentro de un Group con un Rect transparente
+// que SIEMPRE tiene área de clic (aunque el SVG aún no haya cargado).
 function CanvasImage({ el, onSelect, onChange, onTransformEnd, refCb }) {
   const [img] = useImage(el.src, "anonymous");
   return (
-    <KonvaImage
-      image={img}
+    <Group
       id={el.id}
       x={el.x}
       y={el.y}
       width={el.width}
       height={el.height}
+      offsetX={el.width / 2}
+      offsetY={el.height / 2}
       rotation={el.rotation || 0}
       scaleX={el.scaleX || 1}
       scaleY={el.scaleY || 1}
-      offsetX={el.width / 2}
-      offsetY={el.height / 2}
       draggable
       onClick={() => onSelect(el.id)}
       onTap={() => onSelect(el.id)}
@@ -33,12 +74,22 @@ function CanvasImage({ el, onSelect, onChange, onTransformEnd, refCb }) {
       }
       onTransformEnd={() => onTransformEnd(el)}
       ref={refCb}
-    />
+    >
+      <Rect width={el.width} height={el.height} fill="transparent" />
+      <KonvaImage
+        image={img}
+        width={el.width}
+        height={el.height}
+        listening={false}
+        perfectDrawEnabled={false}
+      />
+    </Group>
   );
 }
 
 export default function CardCanvas({
   elements,
+  background,
   selectedId,
   onSelect,
   onChange,
@@ -46,22 +97,33 @@ export default function CardCanvas({
   stageRef,
 }) {
   const nodeRefs = useRef({});
+  const refCbs = useRef({});
   const trRef = useRef(null);
 
-  // Adjunta el Transformer al nodo seleccionado (después de cada render, ya
-  // con las refs actualizadas).
+  // Callback de ref estable por id (evita que React lo llame con null en cada render).
+  const getRefCb = (id) => {
+    if (!refCbs.current[id]) {
+      refCbs.current[id] = (node) => {
+        if (node) nodeRefs.current[id] = node;
+        else delete nodeRefs.current[id];
+      };
+    }
+    return refCbs.current[id];
+  };
+
+  // Adjunta el Transformer al nodo seleccionado y fuerza el repintado del
+  // grafo de "hit" tras cada cambio: Konva no siempre lo actualiza al
+  // añadir/quitar nodos, y entonces los elementos nuevos no son clicables.
   useEffect(() => {
     const tr = trRef.current;
     if (!tr) return;
     const node = selectedId ? nodeRefs.current[selectedId] : null;
     tr.nodes(node ? [node] : []);
-    tr.getLayer()?.batchDraw();
-  });
-
-  const setRef = (id) => (node) => {
-    if (node) nodeRefs.current[id] = node;
-    else delete nodeRefs.current[id];
-  };
+    const layer = tr.getLayer();
+    if (layer) {
+      layer.draw(); // escena + hit, síncrono
+    }
+  }, [elements, selectedId, background]);
 
   const handleTransformEnd = (el) => {
     const node = nodeRefs.current[el.id];
@@ -110,14 +172,13 @@ export default function CardCanvas({
       onMouseDown={clearIfEmpty}
       onTouchStart={clearIfEmpty}
       style={{
-        background: CARD_BG,
         border: "1px solid rgba(42,38,32,0.12)",
         borderRadius: 4,
         touchAction: "none",
       }}
     >
       <Layer>
-        <Rect x={0} y={0} width={CARD_WIDTH} height={CARD_HEIGHT} fill={CARD_BG} listening={false} />
+        <CardBackground bgId={background} />
 
         {elements.map((el) => {
           if (el.type === "text") {
@@ -145,11 +206,10 @@ export default function CardCanvas({
                   onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
                 }
                 onTransformEnd={() => handleTransformEnd(el)}
-                ref={setRef(el.id)}
+                ref={getRefCb(el.id)}
               />
             );
           }
-          // sticker | image
           return (
             <CanvasImage
               key={el.id}
@@ -157,7 +217,7 @@ export default function CardCanvas({
               onSelect={onSelect}
               onChange={onChange}
               onTransformEnd={handleTransformEnd}
-              refCb={setRef(el.id)}
+              refCb={getRefCb(el.id)}
             />
           );
         })}
