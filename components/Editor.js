@@ -64,28 +64,12 @@ export default function Editor() {
   const fileInputRef = useRef(null);
   const textAreaRef = useRef(null);
   const editBaseRef = useRef(null);
-  const dragBaseRef = useRef(null);
-  const elementsRef = useRef(elements);
-  elementsRef.current = elements;
   const didInit = useRef(false);
 
   const selectedEl = useMemo(
     () => elements.find((e) => e.id === selectedId) || null,
     [elements, selectedId]
   );
-
-  // Arrastre: `onDragMove` actualiza la posición sin crear historial (fluido);
-  // al soltar, un solo "deshacer" vuelve al punto previo al arrastre.
-  const handleDragStart = useCallback(() => {
-    dragBaseRef.current = elementsRef.current;
-  }, []);
-  const handleDragEnd = useCallback(() => {
-    if (dragBaseRef.current && dragBaseRef.current !== elementsRef.current) {
-      checkpoint(dragBaseRef.current);
-    }
-    dragBaseRef.current = null;
-    setSaveState((s) => (s === "saved" ? "idle" : s));
-  }, [checkpoint]);
 
   const markDirty = () => setSaveState((s) => (s === "saved" ? "idle" : s));
 
@@ -485,8 +469,6 @@ export default function Editor() {
               selectedId={selectedId}
               onSelect={setSelectedId}
               onChange={patchElement}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
               onEditText={requestEditText}
               stageRef={stageRef}
             />
