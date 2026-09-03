@@ -224,6 +224,9 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+  max-height: 232px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .stickerBtn {
