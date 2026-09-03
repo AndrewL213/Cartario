@@ -9,7 +9,7 @@ export const CARD_HEIGHT = 620;
 export const CARD_BG = "#f6f1e4";
 
 // Imagen (sticker o subida) como nodo de Konva.
-function CanvasImage({ el, draggable, onSelect, onChange, onTransformEnd, refCb }) {
+function CanvasImage({ el, onSelect, onChange, onDragStart, onDragEnd, onTransformEnd, refCb }) {
   const [img] = useImage(el.src, "anonymous");
   return (
     <KonvaImage
@@ -24,12 +24,15 @@ function CanvasImage({ el, draggable, onSelect, onChange, onTransformEnd, refCb 
       scaleY={el.scaleY || 1}
       offsetX={el.width / 2}
       offsetY={el.height / 2}
-      draggable={draggable}
-      onClick={() => onSelect(el.id)}
-      onTap={() => onSelect(el.id)}
-      onDragEnd={(e) =>
-        onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
-      }
+      draggable
+      onMouseDown={() => onSelect(el.id)}
+      onTouchStart={() => onSelect(el.id)}
+      onDragStart={onDragStart}
+      onDragMove={(e) => onChange(el.id, { x: e.target.x(), y: e.target.y() })}
+      onDragEnd={(e) => {
+        onChange(el.id, { x: e.target.x(), y: e.target.y() });
+        onDragEnd();
+      }}
       onTransformEnd={() => onTransformEnd(el)}
       ref={refCb}
     />
@@ -41,6 +44,8 @@ export default function CardCanvas({
   selectedId,
   onSelect,
   onChange,
+  onDragStart,
+  onDragEnd,
   onEditText,
   stageRef,
 }) {
@@ -52,6 +57,7 @@ export default function CardCanvas({
     const tr = trRef.current;
     if (!tr) return;
     const node = selectedId ? nodeRefs.current[selectedId] : null;
+    if (tr.nodes()[0] === node) return; // ya está donde toca; no redibujar
     tr.nodes(node ? [node] : []);
     tr.getLayer()?.batchDraw();
   }, [selectedId, elements]);
@@ -134,13 +140,18 @@ export default function CardCanvas({
                 align={el.align || "left"}
                 fill={el.fill}
                 draggable
-                onClick={() => onSelect(el.id)}
-                onTap={() => onSelect(el.id)}
+                onMouseDown={() => onSelect(el.id)}
+                onTouchStart={() => onSelect(el.id)}
                 onDblClick={() => onEditText(el.id)}
                 onDblTap={() => onEditText(el.id)}
-                onDragEnd={(e) =>
-                  onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
+                onDragStart={onDragStart}
+                onDragMove={(e) =>
+                  onChange(el.id, { x: e.target.x(), y: e.target.y() })
                 }
+                onDragEnd={(e) => {
+                  onChange(el.id, { x: e.target.x(), y: e.target.y() });
+                  onDragEnd();
+                }}
                 onTransformEnd={() => handleTransformEnd(el)}
                 ref={setRef(el.id)}
               />
@@ -151,9 +162,10 @@ export default function CardCanvas({
             <CanvasImage
               key={el.id}
               el={el}
-              draggable
               onSelect={onSelect}
               onChange={onChange}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
               onTransformEnd={handleTransformEnd}
               refCb={setRef(el.id)}
             />
