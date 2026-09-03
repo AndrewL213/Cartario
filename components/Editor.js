@@ -27,6 +27,7 @@ const CardCanvas = dynamic(() => import("./CardCanvas"), {
 });
 
 const CARD_W = 480;
+const FREE_IMAGE_LIMIT = 3; // imágenes propias por tarjeta antes del muro
 const CARD_H = 620;
 const DEFAULT_TITLE = "Tarjeta sin título";
 const INK = "#2a2620";
@@ -248,9 +249,19 @@ export default function Editor() {
     });
   };
 
+  const imageCount = useMemo(
+    () => elements.filter((e) => e.type === "image").length,
+    [elements]
+  );
+  const imagesLocked = !isPremiumUnlocked && imageCount >= FREE_IMAGE_LIMIT;
+
   const handlePickImage = () => {
     if (!user) {
       setUploadError("Entra con tu correo para subir tus propias imágenes.");
+      return;
+    }
+    if (imagesLocked) {
+      setShowAdModal(true);
       return;
     }
     setUploadError("");
@@ -263,6 +274,10 @@ export default function Editor() {
     if (!file) return;
     const supabase = getSupabaseBrowser();
     if (!supabase || !user) return;
+    if (imagesLocked) {
+      setShowAdModal(true);
+      return;
+    }
 
     setUploading(true);
     setUploadError("");
@@ -491,11 +506,15 @@ export default function Editor() {
                 </button>
                 <button
                   type="button"
-                  className={styles.btn}
+                  className={`${styles.btn} ${imagesLocked ? styles.btnPremium : ""}`}
                   onClick={handlePickImage}
                   disabled={uploading}
                 >
-                  {uploading ? "Subiendo…" : "+ Imagen"}
+                  {uploading
+                    ? "Subiendo…"
+                    : imagesLocked
+                    ? "+ Imagen 🔒"
+                    : "+ Imagen"}
                 </button>
                 <input
                   ref={fileInputRef}
@@ -509,6 +528,13 @@ export default function Editor() {
                 <p className={styles.uploadNote}>
                   Las imágenes propias necesitan cuenta. El texto y los stickers
                   gratis funcionan sin registrarse.
+                </p>
+              )}
+              {user && !isPremiumUnlocked && (
+                <p className={styles.uploadNote}>
+                  {Math.min(imageCount, FREE_IMAGE_LIMIT)}/{FREE_IMAGE_LIMIT}{" "}
+                  imágenes gratis en esta tarjeta.
+                  {imagesLocked && " Mira un anuncio o suscríbete para añadir más."}
                 </p>
               )}
               {uploadError && <p className={styles.errorNote}>{uploadError}</p>}
@@ -767,9 +793,9 @@ export default function Editor() {
               Desbloquea los extras premium
             </h2>
             <p className={styles.modalBody}>
-              Mira un anuncio corto para desbloquear los stickers y tipografías
-              premium en esta tarjeta. También puedes suscribirte para no ver
-              anuncios.
+              Mira un anuncio corto para desbloquear, en esta tarjeta, los
+              stickers y tipografías premium y las imágenes propias sin límite.
+              También puedes suscribirte para no ver anuncios.
             </p>
             <div className={styles.modalActions}>
               <button onClick={handleWatchAd} className={styles.modalPrimary}>
