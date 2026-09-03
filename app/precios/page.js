@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSupabaseServer } from "../../lib/supabase/server";
 import SubscribeButton from "../../components/SubscribeButton";
+import ManageSubscriptionButton from "../../components/ManageSubscriptionButton";
 import styles from "./precios.module.css";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,8 @@ export const metadata = {
   title: "Precios — Papelera",
 };
 
-export default async function PreciosPage() {
+export default async function PreciosPage({ searchParams }) {
+  const checkout = searchParams?.checkout;
   let isSubscriber = false;
   const supabase = getSupabaseServer();
   if (supabase) {
@@ -37,6 +39,18 @@ export default async function PreciosPage() {
         Lo básico es gratis para siempre. Los extras se desbloquean viendo un
         anuncio corto, o con la suscripción si prefieres no verlos.
       </p>
+
+      {checkout === "success" && (
+        <p className={`${styles.banner} ${styles.bannerOk}`}>
+          ¡Listo! Si el pago se confirmó, tu cuenta pasará a "sin anuncios" en
+          unos segundos. Recarga si no lo ves al instante.
+        </p>
+      )}
+      {checkout === "cancel" && (
+        <p className={`${styles.banner} ${styles.bannerNeutral}`}>
+          Pago cancelado. Sin cambios en tu cuenta.
+        </p>
+      )}
 
       <div className={styles.plans}>
         <div className={styles.plan}>
@@ -71,7 +85,10 @@ export default async function PreciosPage() {
             </li>
           </ul>
           {isSubscriber ? (
-            <span className={styles.currentBtn}>Ya estás suscrito ✓</span>
+            <>
+              <span className={styles.currentBtn}>Ya estás suscrito ✓</span>
+              <ManageSubscriptionButton className={styles.subscribeBtn} />
+            </>
           ) : (
             <SubscribeButton className={styles.subscribeBtn} />
           )}

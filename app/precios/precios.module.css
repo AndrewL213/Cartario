@@ -131,6 +131,24 @@
   align-self: flex-start;
 }
 
+.banner {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.bannerOk {
+  background: rgba(110, 127, 92, 0.15);
+  color: var(--sage-deep);
+}
+
+.bannerNeutral {
+  background: rgba(42, 38, 32, 0.07);
+  color: var(--ink-soft);
+}
+
 .note {
   margin-top: 32px;
   font-size: 13px;
