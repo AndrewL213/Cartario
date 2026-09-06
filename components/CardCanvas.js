@@ -92,6 +92,7 @@ export default function CardCanvas({
   background,
   backgroundColor,
   selectedId,
+  showWatermark = false,
   onSelect,
   onChange,
   onEditText,
@@ -222,6 +223,22 @@ export default function CardCanvas({
             />
           );
         })}
+
+        {showWatermark && (
+          <Text
+            text="Hecho con Papelera"
+            x={CARD_WIDTH - 174}
+            y={CARD_HEIGHT - 24}
+            width={160}
+            align="right"
+            fontSize={12}
+            fontFamily="Fraunces"
+            fontStyle="italic"
+            fill="rgba(42, 38, 32, 0.4)"
+            listening={false}
+            perfectDrawEnabled={false}
+          />
+        )}
 
         <Transformer
           ref={trRef}

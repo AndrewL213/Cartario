@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CardMockNote from "../components/CardMockNote";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -30,11 +31,7 @@ export default function Home() {
 
         <div className={styles.heroCard}>
           <div className={`${styles.cardMock} paper-texture`}>
-            <span className={styles.cardMockNote}>
-              Feliz cumpleaños,
-              <br />
-              Ana
-            </span>
+            <CardMockNote className={styles.cardMockNote} />
             <div className={styles.stickerA} aria-hidden="true" />
             <div className={styles.stickerB} aria-hidden="true" />
           </div>

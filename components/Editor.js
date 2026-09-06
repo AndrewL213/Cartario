@@ -76,19 +76,22 @@ export default function Editor() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
-  // Desbloqueo por categoría (por tarjeta). El suscriptor lo tiene todo.
+  // Desbloqueo por BLOQUES (por tarjeta). El suscriptor lo tiene todo.
+  //   contenido = stickers + imágenes sin límite
+  //   estilo    = tipografías + fondos premium
   const [isSubscriber, setIsSubscriber] = useState(false);
-  const [unlocked, setUnlocked] = useState({
-    stickers: false,
-    fonts: false,
-    backgrounds: false,
-    images: false,
-  });
-  const [adCategory, setAdCategory] = useState(null); // categoría que abrió el modal
+  const [unlocked, setUnlocked] = useState({ contenido: false, estilo: false });
+  const [adBlock, setAdBlock] = useState(null); // bloque que abrió el modal
   const [adPlaying, setAdPlaying] = useState(false);
   const [adSecondsLeft, setAdSecondsLeft] = useState(0);
 
-  const has = (cat) => isSubscriber || unlocked[cat];
+  const CAT_BLOCK = {
+    stickers: "contenido",
+    images: "contenido",
+    fonts: "estilo",
+    backgrounds: "estilo",
+  };
+  const has = (cat) => isSubscriber || unlocked[CAT_BLOCK[cat]];
 
   const history = useEditorHistory([]);
   const { elements, commit, replace, checkpoint, undo, redo, reset, canUndo, canRedo } =
@@ -287,7 +290,7 @@ export default function Editor() {
 
   const requireUnlock = (cat) => {
     if (has(cat)) return true;
-    setAdCategory(cat);
+    setAdBlock(CAT_BLOCK[cat]);
     return false;
   };
 
@@ -317,7 +320,7 @@ export default function Editor() {
       return;
     }
     if (imagesLocked) {
-      setAdCategory("images");
+      setAdBlock("contenido");
       return;
     }
     setUploadError("");
@@ -331,7 +334,7 @@ export default function Editor() {
     const supabase = getSupabaseBrowser();
     if (!supabase || !user) return;
     if (imagesLocked) {
-      setAdCategory("images");
+      setAdBlock("contenido");
       return;
     }
 
@@ -510,30 +513,33 @@ export default function Editor() {
   };
 
   // --- anuncio recompensado (ver lib/ads.js) -----------------------
-  const AD_LABELS = {
-    stickers: "los stickers premium",
-    fonts: "las tipografías premium",
-    backgrounds: "los fondos premium",
-    images: "subir imágenes sin límite",
+  // Un anuncio desbloquea un BLOQUE entero.
+  const BLOCK_LABELS = {
+    contenido: "los stickers y las imágenes sin límite",
+    estilo: "las tipografías y los fondos premium",
+  };
+  const BLOCK_SHORT = {
+    contenido: "stickers e imágenes",
+    estilo: "tipografías y fondos",
   };
   const handleWatchAd = async () => {
-    const cat = adCategory;
-    if (!cat || adPlaying) return;
+    const block = adBlock;
+    if (!block || adPlaying) return;
     setAdPlaying(true);
     setAdSecondsLeft(4);
     try {
-      const { rewarded } = await showRewardedAd(cat, {
+      const { rewarded } = await showRewardedAd(block, {
         onTick: (ms) => setAdSecondsLeft(Math.ceil(ms / 1000)),
       });
-      if (rewarded) setUnlocked((u) => ({ ...u, [cat]: true }));
+      if (rewarded) setUnlocked((u) => ({ ...u, [block]: true }));
     } finally {
       setAdPlaying(false);
-      setAdCategory(null);
+      setAdBlock(null);
     }
   };
   const closeAdModal = () => {
     if (adPlaying) return;
-    setAdCategory(null);
+    setAdBlock(null);
   };
 
   const saveLabel = !user
@@ -552,14 +558,12 @@ export default function Editor() {
           {isSubscriber ? (
             <span className={styles.unlockedBadge}>Plan sin anuncios</span>
           ) : (
-            ["stickers", "fonts", "backgrounds", "images"].some(
-              (c) => unlocked[c]
-            ) && (
+            ["contenido", "estilo"].some((b) => unlocked[b]) && (
               <span className={styles.unlockedBadge}>
                 Desbloqueado:{" "}
-                {["stickers", "fonts", "backgrounds", "images"]
-                  .filter((c) => unlocked[c])
-                  .map((c) => ({ stickers: "stickers", fonts: "fuentes", backgrounds: "fondos", images: "imágenes" }[c]))
+                {["contenido", "estilo"]
+                  .filter((b) => unlocked[b])
+                  .map((b) => BLOCK_SHORT[b])
                   .join(" · ")}
               </span>
             )
@@ -616,6 +620,7 @@ export default function Editor() {
               elements={elements}
               background={background}
               backgroundColor={backgroundColor}
+              showWatermark={!isSubscriber}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onChange={patchElement}
@@ -1024,7 +1029,7 @@ export default function Editor() {
         )}
       </div>
 
-      {adCategory && (
+      {adBlock && (
         <div
           className={styles.modalOverlay}
           role="dialog"
@@ -1039,8 +1044,8 @@ export default function Editor() {
                 </h2>
                 <p className={styles.modalBody}>
                   {adSecondsLeft > 0
-                    ? `${adSecondsLeft} s para desbloquear ${AD_LABELS[adCategory]}.`
-                    : `Desbloqueando ${AD_LABELS[adCategory]}…`}
+                    ? `${adSecondsLeft} s para desbloquear ${BLOCK_LABELS[adBlock]}.`
+                    : `Desbloqueando ${BLOCK_LABELS[adBlock]}…`}
                 </p>
                 <div className={styles.adBar} aria-hidden="true">
                   <span
@@ -1052,11 +1057,11 @@ export default function Editor() {
             ) : (
               <>
                 <h2 id="ad-modal-title" className={styles.modalTitle}>
-                  Desbloquea {AD_LABELS[adCategory]}
+                  Desbloquea {BLOCK_LABELS[adBlock]}
                 </h2>
                 <p className={styles.modalBody}>
-                  Mira un anuncio corto para desbloquear {AD_LABELS[adCategory]}{" "}
-                  en esta tarjeta.{" "}
+                  Un solo anuncio corto desbloquea {BLOCK_LABELS[adBlock]} en
+                  esta tarjeta.{" "}
                   <Link href="/precios" className={styles.accountLink}>
                     O suscríbete
                   </Link>{" "}
