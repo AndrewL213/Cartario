@@ -722,7 +722,7 @@ export default function Editor() {
                     >
                       <span
                         className={styles.bgSwatch}
-                        style={{ background: b.base }}
+                        style={{ backgroundColor: b.base }}
                         data-bg={b.id}
                       />
                       <span className={styles.bgLabel}>
