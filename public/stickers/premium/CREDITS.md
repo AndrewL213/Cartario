@@ -2,8 +2,8 @@
 
 Los SVG de esta carpeta (`globo`, `regalo`, `pastel`, `confeti`,
 `confeti-bola`, `arcoiris`, `ramo`, `flor-cerezo`, `cupcake`, `cinta`,
-`brindis`, `carta-amor`) provienen del proyecto **OpenMoji** —
-https://openmoji.org
+`brindis`, `carta-amor`, `mariposa`, `paloma`) provienen del proyecto
+**OpenMoji** — https://openmoji.org
 
 - Licencia: **CC BY-SA 4.0** (https://creativecommons.org/licenses/by-sa/4.0/)
 - Autoría: OpenMoji contributors — HfG Schwäbisch Gmünd

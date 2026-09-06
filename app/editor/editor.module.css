@@ -231,23 +231,29 @@
 
 /* --- fondos --------------------------------------------------------------- */
 
+/* Fondos en una fila horizontal con scroll */
 .bgGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 6px;
+  scrollbar-width: thin;
 }
 
 .bgBtn {
+  flex: 0 0 auto;
+  width: 68px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 6px;
+  gap: 5px;
+  padding: 7px 5px;
   border: 1px solid rgba(42, 38, 32, 0.18);
   border-radius: 6px;
   background: #fff;
   cursor: pointer;
   font: inherit;
-  text-align: left;
 }
 
 .bgBtn:hover {
@@ -265,63 +271,93 @@
 }
 
 .bgSwatch {
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   border-radius: 4px;
   border: 1px solid rgba(42, 38, 32, 0.15);
   flex: none;
   background-repeat: repeat;
 }
 
-.bgSwatch[data-bg="grid"] {
+.bgSwatch[data-bg="grid"],
+.bgSwatch[data-bg="kraft"] {
   background-image:
     linear-gradient(rgba(42, 38, 32, 0.18) 1px, transparent 1px),
     linear-gradient(90deg, rgba(42, 38, 32, 0.18) 1px, transparent 1px);
-  background-size: 7px 7px;
+  background-size: 8px 8px;
 }
 
 .bgSwatch[data-bg="dots"] {
-  background-image: radial-gradient(rgba(42, 38, 32, 0.3) 1.2px, transparent 1.3px);
-  background-size: 7px 7px;
+  background-image: radial-gradient(rgba(42, 38, 32, 0.3) 1.3px, transparent 1.4px);
+  background-size: 8px 8px;
 }
 
 .bgSwatch[data-bg="lines"] {
   background-image: linear-gradient(rgba(42, 38, 32, 0.18) 1px, transparent 1px);
-  background-size: 100% 8px;
+  background-size: 100% 9px;
 }
 
 .bgSwatch[data-bg="graph"] {
   background-image:
     linear-gradient(rgba(110, 127, 92, 0.35) 1px, transparent 1px),
     linear-gradient(90deg, rgba(110, 127, 92, 0.35) 1px, transparent 1px);
-  background-size: 5px 5px;
+  background-size: 6px 6px;
 }
 
 .bgSwatch[data-bg="iso"] {
   background-image:
     linear-gradient(45deg, rgba(42, 38, 32, 0.16) 1px, transparent 1px),
     linear-gradient(-45deg, rgba(42, 38, 32, 0.16) 1px, transparent 1px);
-  background-size: 7px 7px;
-}
-
-.bgSwatch[data-bg="kraft"] {
-  background-image:
-    linear-gradient(rgba(42, 38, 32, 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(42, 38, 32, 0.15) 1px, transparent 1px);
-  background-size: 7px 7px;
+  background-size: 8px 8px;
 }
 
 .bgSwatch[data-bg="ledger"] {
   background-image:
     linear-gradient(rgba(42, 38, 32, 0.18) 1px, transparent 1px),
     linear-gradient(90deg, rgba(180, 97, 79, 0.45) 1px, transparent 1px);
-  background-size: 100% 8px, 10px 100%;
+  background-size: 100% 9px, 11px 100%;
+}
+
+.bgSwatch[data-bg="cross"] {
+  background-image:
+    linear-gradient(rgba(42, 38, 32, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 38, 32, 0.2) 1px, transparent 1px);
+  background-size: 9px 9px;
+  background-position: center;
+}
+
+.bgSwatch[data-bg="hatch"] {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(42, 38, 32, 0.12) 0 1px,
+    transparent 1px 5px
+  );
+}
+
+.bgSwatch[data-bg="checks"] {
+  background-image:
+    linear-gradient(45deg, rgba(42, 38, 32, 0.08) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(42, 38, 32, 0.08) 25%, transparent 25%);
+  background-size: 10px 10px;
+}
+
+.bgSwatch[data-bg="confeti"] {
+  background-image:
+    radial-gradient(var(--clay) 1.4px, transparent 1.6px),
+    radial-gradient(var(--sage) 1.4px, transparent 1.6px);
+  background-size: 14px 14px, 14px 14px;
+  background-position: 0 0, 7px 7px;
 }
 
 .bgLabel {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--ink);
-  line-height: 1.2;
+  line-height: 1.15;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- capas -------------------------------------------------------------- */
