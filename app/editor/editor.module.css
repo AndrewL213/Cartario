@@ -749,6 +749,13 @@
   color: var(--clay-deep);
 }
 
+.premiumSub {
+  margin: -4px 0 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
 .premiumAllOn {
   font-size: 14px;
   font-weight: 600;

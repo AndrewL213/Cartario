@@ -36,8 +36,10 @@ export default async function PreciosPage({ searchParams }) {
 
       <h1 className={styles.title}>Un plan sencillo</h1>
       <p className={styles.lead}>
-        Lo básico es gratis para siempre. Los extras se desbloquean viendo un
-        anuncio corto, o con la suscripción si prefieres no verlos.
+        Lo básico es gratis para siempre. En el plan gratis, cada anuncio
+        desbloquea sus extras solo en la tarjeta en la que estás. La
+        suscripción quita los anuncios y la marca de agua en{" "}
+        <strong>todas tus tarjetas y proyectos</strong>.
       </p>
 
       {checkout === "success" && (
@@ -61,7 +63,11 @@ export default async function PreciosPage({ searchParams }) {
           <ul className={styles.features}>
             <li>Editor completo: texto, stickers, fondos, capas, deshacer</li>
             <li>3 imágenes propias por tarjeta</li>
-            <li>Extras premium viendo un anuncio corto por categoría</li>
+            <li>
+              Extras premium viendo un anuncio corto por bloque, y solo en esa
+              tarjeta (hay que repetirlo en cada tarjeta nueva)
+            </li>
+            <li>Marca de agua pequeña al exportar o compartir</li>
             <li>Guardar en tu cuenta y compartir por enlace</li>
           </ul>
           <span className={styles.currentBtn}>Tu plan actual</span>
@@ -73,10 +79,15 @@ export default async function PreciosPage({ searchParams }) {
             <strong>1,99 €</strong> <span className={styles.muted}>/ mes</span>
           </p>
           <ul className={styles.features}>
-            <li>Cero anuncios</li>
-            <li>Toda la biblioteca premium desbloqueada</li>
+            <li>
+              Cero anuncios en <strong>todas tus tarjetas y proyectos</strong>,
+              siempre
+            </li>
+            <li>
+              Toda la biblioteca premium desbloqueada en todas las tarjetas
+            </li>
             <li>Imágenes propias sin límite</li>
-            <li>Sin marca de agua al exportar o compartir</li>
+            <li>Sin marca de agua al exportar ni al compartir</li>
             <li>
               Sube tus propios stickers <span className={styles.muted}>(próximamente)</span>
             </li>

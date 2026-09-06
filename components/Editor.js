@@ -1041,6 +1041,10 @@ export default function Editor() {
             ) : (
               <div className={styles.premiumBox}>
                 <p className={styles.premiumTitle}>Desbloquear premium</p>
+                <p className={styles.premiumSub}>
+                  Cada anuncio desbloquea su bloque <strong>solo en esta
+                  tarjeta</strong>. En otra tarjeta habrá que volver a verlo.
+                </p>
                 {[
                   {
                     id: "contenido",
@@ -1082,7 +1086,8 @@ export default function Editor() {
                   <Link href="/precios" className={styles.accountLink}>
                     suscríbete
                   </Link>{" "}
-                  y ten todo sin anuncios ni marca de agua.
+                  y ten todo desbloqueado, sin anuncios ni marca de agua, en{" "}
+                  <strong>todas tus tarjetas</strong>.
                 </p>
               </div>
             )}
@@ -1166,13 +1171,13 @@ export default function Editor() {
                   Desbloquea {BLOCK_LABELS[adBlock]}
                 </h2>
                 <p className={styles.modalBody}>
-                  Un solo anuncio corto desbloquea {BLOCK_LABELS[adBlock]} en
-                  esta tarjeta.{" "}
+                  Un solo anuncio corto desbloquea {BLOCK_LABELS[adBlock]}{" "}
+                  <strong>solo en esta tarjeta</strong>.{" "}
                   <Link href="/precios" className={styles.accountLink}>
                     O suscríbete
                   </Link>{" "}
-                  para no ver anuncios, tener toda la biblioteca y exportar sin
-                  marca de agua.
+                  y no verás anuncios ni marca de agua en ninguna de tus
+                  tarjetas.
                 </p>
                 <div className={styles.modalActions}>
                   <button
