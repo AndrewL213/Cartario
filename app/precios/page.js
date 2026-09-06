@@ -76,6 +76,7 @@ export default async function PreciosPage({ searchParams }) {
             <li>Cero anuncios</li>
             <li>Toda la biblioteca premium desbloqueada</li>
             <li>Imágenes propias sin límite</li>
+            <li>Sin marca de agua al exportar o compartir</li>
             <li>
               Sube tus propios stickers <span className={styles.muted}>(próximamente)</span>
             </li>

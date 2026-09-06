@@ -84,6 +84,7 @@ export default function Editor() {
   const [adBlock, setAdBlock] = useState(null); // bloque que abrió el modal
   const [adPlaying, setAdPlaying] = useState(false);
   const [adSecondsLeft, setAdSecondsLeft] = useState(0);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const CAT_BLOCK = {
     stickers: "contenido",
@@ -497,7 +498,7 @@ export default function Editor() {
     router.refresh();
   };
 
-  const handleExport = () => {
+  const runExport = () => {
     const stage = stageRef.current;
     if (!stage) return;
     const prevSelected = selectedId;
@@ -505,11 +506,21 @@ export default function Editor() {
     requestAnimationFrame(() => {
       const uri = stage.toDataURL({ pixelRatio: 2 });
       const link = document.createElement("a");
-      link.download = `${(title || "tarjeta").replace(/\s+/g, "-").toLowerCase()}.png`;
+      link.download = `${(title || "tarjeta")
+        .replace(/\s+/g, "-")
+        .toLowerCase()}.png`;
       link.href = uri;
       link.click();
       setSelectedId(prevSelected);
     });
+  };
+
+  const handleExport = () => {
+    if (!isSubscriber) {
+      setShowExportModal(true);
+      return;
+    }
+    runExport();
   };
 
   // --- anuncio recompensado (ver lib/ads.js) -----------------------
@@ -634,6 +645,62 @@ export default function Editor() {
           </div>
 
           <div className={styles.panel}>
+            {/* premium: bloques de desbloqueo (bien visible) */}
+            {isSubscriber ? (
+              <div className={styles.premiumBox}>
+                <span className={styles.premiumAllOn}>
+                  ✓ Plan sin anuncios · todo desbloqueado
+                </span>
+              </div>
+            ) : (
+              <div className={styles.premiumBox}>
+                <p className={styles.premiumTitle}>Desbloquear premium</p>
+                {[
+                  {
+                    id: "contenido",
+                    label: "Stickers e imágenes",
+                    desc: "Stickers premium + fotos propias sin límite",
+                  },
+                  {
+                    id: "estilo",
+                    label: "Tipografías y fondos",
+                    desc: "Todas las fuentes y fondos premium",
+                  },
+                ].map((b) => (
+                  <div
+                    key={b.id}
+                    className={`${styles.block} ${
+                      unlocked[b.id] ? styles.blockOn : ""
+                    }`}
+                  >
+                    <div className={styles.blockHead}>
+                      <strong>{b.label}</strong>
+                      <span className={styles.blockState}>
+                        {unlocked[b.id] ? "✓ activo" : "🔒 bloqueado"}
+                      </span>
+                    </div>
+                    <p className={styles.blockDesc}>{b.desc}</p>
+                    {!unlocked[b.id] && (
+                      <button
+                        type="button"
+                        className={styles.blockBtn}
+                        onClick={() => setAdBlock(b.id)}
+                      >
+                        ▶ Ver 1 anuncio para desbloquear
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <p className={styles.blockNote}>
+                  O{" "}
+                  <Link href="/precios" className={styles.accountLink}>
+                    suscríbete
+                  </Link>{" "}
+                  y ten todo sin anuncios ni marca de agua.
+                </p>
+              </div>
+            )}
+
             {/* añadir */}
             <div className={styles.group}>
               <p className={styles.groupTitle}>Añadir</p>
@@ -1065,8 +1132,8 @@ export default function Editor() {
                   <Link href="/precios" className={styles.accountLink}>
                     O suscríbete
                   </Link>{" "}
-                  para no ver anuncios y tener toda la biblioteca —además de
-                  poder subir tus propias fuentes y stickers.
+                  para no ver anuncios, tener toda la biblioteca y exportar sin
+                  marca de agua.
                 </p>
                 <div className={styles.modalActions}>
                   <button
@@ -1084,6 +1151,51 @@ export default function Editor() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {showExportModal && (
+        <div
+          className={styles.modalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-modal-title"
+        >
+          <div className={styles.modal}>
+            <h2 id="export-modal-title" className={styles.modalTitle}>
+              Se descargará con marca de agua
+            </h2>
+            <p className={styles.modalBody}>
+              Tu tarjeta llevará un pequeño “Hecho con Papelera” en la esquina.
+              Con la suscripción se quita, y además no verás anuncios ni límites.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                onClick={() => {
+                  setShowExportModal(false);
+                  runExport();
+                }}
+                className={styles.modalPrimary}
+              >
+                Descargar igual
+              </button>
+              <Link
+                href="/precios"
+                className={styles.modalSecondary}
+                style={{ textAlign: "center", textDecoration: "none" }}
+              >
+                Ver planes
+              </Link>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowExportModal(false)}
+              className={styles.linkBtn}
+              style={{ display: "block", margin: "14px auto 0" }}
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}

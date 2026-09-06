@@ -66,12 +66,15 @@ function CanvasImage({ el, onSelect, onChange, onTransformEnd, refCb }) {
       scaleX={el.scaleX || 1}
       scaleY={el.scaleY || 1}
       draggable
+      // Seleccionar SOLO en click/tap (fin del gesto). Si se hace en
+      // dragstart, el re-render de la selección devuelve el nodo a su
+      // posición anterior a mitad del arrastre.
       onClick={() => onSelect(el.id)}
       onTap={() => onSelect(el.id)}
-      onDragStart={() => onSelect(el.id)}
-      onDragEnd={(e) =>
-        onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
-      }
+      onDragEnd={(e) => {
+        onSelect(el.id);
+        onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true });
+      }}
       onTransformEnd={() => onTransformEnd(el)}
       ref={refCb}
     >
@@ -136,14 +139,18 @@ export default function CardCanvas({
     node.scaleY(1);
 
     if (el.type === "text") {
+      // Redimensionar texto = cambiar SOLO el tamaño de letra (uniforme).
+      const factor = (Math.abs(scaleX) + Math.abs(scaleY)) / 2;
       onChange(
         el.id,
         {
           x: node.x(),
           y: node.y(),
           rotation: node.rotation(),
-          fontSize: Math.max(8, Math.round((el.fontSize || 24) * scaleY)),
-          width: Math.max(24, Math.round((el.width || 240) * scaleX)),
+          fontSize: Math.min(
+            200,
+            Math.max(8, Math.round((el.fontSize || 24) * factor))
+          ),
         },
         { commit: true }
       );
@@ -154,8 +161,8 @@ export default function CardCanvas({
           x: node.x(),
           y: node.y(),
           rotation: node.rotation(),
-          scaleX: (el.scaleX || 1) * scaleX,
-          scaleY: (el.scaleY || 1) * scaleY,
+          scaleX: Math.max(0.05, (el.scaleX || 1) * scaleX),
+          scaleY: Math.max(0.05, (el.scaleY || 1) * scaleY),
         },
         { commit: true }
       );
@@ -165,6 +172,10 @@ export default function CardCanvas({
   const clearIfEmpty = (e) => {
     if (e.target === e.target.getStage()) onSelect(null);
   };
+
+  const selectedType = selectedId
+    ? elements.find((e) => e.id === selectedId)?.type
+    : null;
 
   return (
     <Stage
@@ -201,12 +212,16 @@ export default function CardCanvas({
                 draggable
                 onClick={() => onSelect(el.id)}
                 onTap={() => onSelect(el.id)}
-                onDragStart={() => onSelect(el.id)}
                 onDblClick={() => onEditText(el.id)}
                 onDblTap={() => onEditText(el.id)}
-                onDragEnd={(e) =>
-                  onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
-                }
+                onDragEnd={(e) => {
+                  onChange(
+                    el.id,
+                    { x: e.target.x(), y: e.target.y() },
+                    { commit: true }
+                  );
+                  onSelect(el.id);
+                }}
                 onTransformEnd={() => handleTransformEnd(el)}
                 ref={getRefCb(el.id)}
               />
@@ -245,13 +260,22 @@ export default function CardCanvas({
           rotateEnabled
           keepRatio
           flipEnabled={false}
-          anchorSize={10}
+          ignoreStroke
+          enabledAnchors={
+            selectedType === "text"
+              ? ["top-left", "top-right", "bottom-left", "bottom-right"]
+              : undefined
+          }
+          anchorSize={11}
           anchorStroke="#b4614f"
           anchorFill="#fff"
+          anchorCornerRadius={2}
           borderStroke="#b4614f"
+          borderStrokeWidth={1.5}
           borderDash={[4, 3]}
+          rotateAnchorOffset={22}
           boundBoxFunc={(oldBox, newBox) =>
-            newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
+            newBox.width < 16 || newBox.height < 16 ? oldBox : newBox
           }
         />
       </Layer>
