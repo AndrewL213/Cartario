@@ -54,6 +54,21 @@ const TEXT_COLORS = [
   "#ffffff", // blanco
 ];
 
+// Colores de fondo sugeridos (tonos de papel/pastel que combinan con la marca).
+const BG_COLORS = [
+  "#f6f1e4", // crema
+  "#efe7d4", // arena
+  "#e7ddc7", // lino
+  "#f3e6df", // rosa polvo
+  "#e9e2d0", // musgo claro
+  "#dfe6df", // salvia niebla
+  "#dde5ec", // azul niebla
+  "#efe1e6", // malva
+  "#f0e8d8", // marfil cálido
+  "#e6e0e8", // lavanda
+  "#1f1c17", // tinta (fondo oscuro)
+];
+
 const genId = () =>
   `el-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -645,62 +660,6 @@ export default function Editor() {
           </div>
 
           <div className={styles.panel}>
-            {/* premium: bloques de desbloqueo (bien visible) */}
-            {isSubscriber ? (
-              <div className={styles.premiumBox}>
-                <span className={styles.premiumAllOn}>
-                  ✓ Plan sin anuncios · todo desbloqueado
-                </span>
-              </div>
-            ) : (
-              <div className={styles.premiumBox}>
-                <p className={styles.premiumTitle}>Desbloquear premium</p>
-                {[
-                  {
-                    id: "contenido",
-                    label: "Stickers e imágenes",
-                    desc: "Stickers premium + fotos propias sin límite",
-                  },
-                  {
-                    id: "estilo",
-                    label: "Tipografías y fondos",
-                    desc: "Todas las fuentes y fondos premium",
-                  },
-                ].map((b) => (
-                  <div
-                    key={b.id}
-                    className={`${styles.block} ${
-                      unlocked[b.id] ? styles.blockOn : ""
-                    }`}
-                  >
-                    <div className={styles.blockHead}>
-                      <strong>{b.label}</strong>
-                      <span className={styles.blockState}>
-                        {unlocked[b.id] ? "✓ activo" : "🔒 bloqueado"}
-                      </span>
-                    </div>
-                    <p className={styles.blockDesc}>{b.desc}</p>
-                    {!unlocked[b.id] && (
-                      <button
-                        type="button"
-                        className={styles.blockBtn}
-                        onClick={() => setAdBlock(b.id)}
-                      >
-                        ▶ Ver 1 anuncio para desbloquear
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <p className={styles.blockNote}>
-                  O{" "}
-                  <Link href="/precios" className={styles.accountLink}>
-                    suscríbete
-                  </Link>{" "}
-                  y ten todo sin anuncios ni marca de agua.
-                </p>
-              </div>
-            )}
-
             {/* añadir */}
             <div className={styles.group}>
               <p className={styles.groupTitle}>Añadir</p>
@@ -776,27 +735,51 @@ export default function Editor() {
               </div>
 
               <div className={styles.field}>
-                <span className={styles.fieldLabel}>Color del fondo</span>
-                <div className={styles.swatches}>
-                  <input
-                    type="color"
-                    className={styles.colorInput}
-                    value={bgColorValue}
-                    onChange={(e) => changeBackgroundColor(e.target.value)}
-                    aria-label="Color del fondo"
-                  />
+                <span className={styles.fieldLabel}>
+                  Color del fondo
                   {backgroundColor && (
-                    <button
-                      type="button"
-                      className={styles.linkBtn}
-                      onClick={() => {
-                        setBackgroundColor(null);
-                        markDirty();
-                      }}
-                    >
-                      color original
-                    </button>
+                    <>
+                      {" · "}
+                      <button
+                        type="button"
+                        className={styles.linkBtn}
+                        onClick={() => {
+                          setBackgroundColor(null);
+                          markDirty();
+                        }}
+                      >
+                        color original
+                      </button>
+                    </>
                   )}
+                </span>
+                <div className={styles.swatches}>
+                  {BG_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={`Fondo ${c}`}
+                      className={`${styles.swatch} ${
+                        (backgroundColor || currentBg.base).toLowerCase() ===
+                        c.toLowerCase()
+                          ? styles.swatchActive
+                          : ""
+                      }`}
+                      style={{ background: c }}
+                      onClick={() => changeBackgroundColor(c)}
+                    />
+                  ))}
+                  <label
+                    className={styles.rainbowSwatch}
+                    title="Elegir cualquier color"
+                  >
+                    <input
+                      type="color"
+                      value={bgColorValue}
+                      onChange={(e) => changeBackgroundColor(e.target.value)}
+                      aria-label="Color del fondo personalizado"
+                    />
+                  </label>
                 </div>
               </div>
             </div>
@@ -1047,6 +1030,62 @@ export default function Editor() {
                 </>
               )}
             </div>
+
+            {/* premium: bloques de desbloqueo (al final del panel) */}
+            {isSubscriber ? (
+              <div className={styles.premiumBox}>
+                <span className={styles.premiumAllOn}>
+                  ✓ Plan sin anuncios · todo desbloqueado
+                </span>
+              </div>
+            ) : (
+              <div className={styles.premiumBox}>
+                <p className={styles.premiumTitle}>Desbloquear premium</p>
+                {[
+                  {
+                    id: "contenido",
+                    label: "Stickers e imágenes",
+                    desc: "Stickers premium + fotos propias sin límite",
+                  },
+                  {
+                    id: "estilo",
+                    label: "Tipografías y fondos",
+                    desc: "Todas las fuentes y fondos premium",
+                  },
+                ].map((b) => (
+                  <div
+                    key={b.id}
+                    className={`${styles.block} ${
+                      unlocked[b.id] ? styles.blockOn : ""
+                    }`}
+                  >
+                    <div className={styles.blockHead}>
+                      <strong>{b.label}</strong>
+                      <span className={styles.blockState}>
+                        {unlocked[b.id] ? "✓ activo" : "🔒 bloqueado"}
+                      </span>
+                    </div>
+                    <p className={styles.blockDesc}>{b.desc}</p>
+                    {!unlocked[b.id] && (
+                      <button
+                        type="button"
+                        className={styles.blockBtn}
+                        onClick={() => setAdBlock(b.id)}
+                      >
+                        ▶ Ver 1 anuncio para desbloquear
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <p className={styles.blockNote}>
+                  O{" "}
+                  <Link href="/precios" className={styles.accountLink}>
+                    suscríbete
+                  </Link>{" "}
+                  y ten todo sin anuncios ni marca de agua.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

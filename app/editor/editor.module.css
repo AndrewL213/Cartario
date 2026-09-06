@@ -1,5 +1,5 @@
 .main {
-  max-width: 980px;
+  max-width: 1060px;
   margin: 0 auto;
   padding: 32px 24px 96px;
 }
@@ -122,9 +122,9 @@
 }
 
 .panel {
-  flex: 1 1 260px;
-  min-width: 240px;
-  max-width: 360px;
+  flex: 1 1 320px;
+  min-width: 280px;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -222,9 +222,9 @@
 
 .stickerGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
-  max-height: 232px;
+  max-height: 260px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -504,6 +504,44 @@
   border-radius: 4px;
   background: #fff;
   cursor: pointer;
+}
+
+/* Botón "arcoíris" que abre el selector de color libre */
+.rainbowSwatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(42, 38, 32, 0.25);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  background: conic-gradient(
+    from 0deg,
+    #e5544b,
+    #e5a24b,
+    #d9d24b,
+    #6ec06e,
+    #4bb3d9,
+    #6a6ad9,
+    #b76ad0,
+    #e5544b
+  );
+}
+
+.rainbowSwatch input {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.rainbowSwatch:focus-within {
+  box-shadow: 0 0 0 2px var(--clay);
 }
 
 .emptyPanelNote {

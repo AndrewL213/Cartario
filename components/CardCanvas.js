@@ -66,15 +66,15 @@ function CanvasImage({ el, onSelect, onChange, onTransformEnd, refCb }) {
       scaleX={el.scaleX || 1}
       scaleY={el.scaleY || 1}
       draggable
-      // Seleccionar SOLO en click/tap (fin del gesto). Si se hace en
-      // dragstart, el re-render de la selección devuelve el nodo a su
-      // posición anterior a mitad del arrastre.
-      onClick={() => onSelect(el.id)}
-      onTap={() => onSelect(el.id)}
-      onDragEnd={(e) => {
-        onSelect(el.id);
-        onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true });
-      }}
+      // Seleccionar en mousedown/touchstart: ocurre ANTES de que arranque
+      // el arrastre (nodo aún en reposo, sin salto) y, si ya está
+      // seleccionado, React no re-renderiza. Nunca en dragstart (salto) ni
+      // en dragend (rompe el siguiente arrastre seguido).
+      onMouseDown={() => onSelect(el.id)}
+      onTouchStart={() => onSelect(el.id)}
+      onDragEnd={(e) =>
+        onChange(el.id, { x: e.target.x(), y: e.target.y() }, { commit: true })
+      }
       onTransformEnd={() => onTransformEnd(el)}
       ref={refCb}
     >
@@ -116,19 +116,18 @@ export default function CardCanvas({
     return refCbs.current[id];
   };
 
-  // Adjunta el Transformer al nodo seleccionado y fuerza el repintado del
-  // grafo de "hit" tras cada cambio: Konva no siempre lo actualiza al
-  // añadir/quitar nodos, y entonces los elementos nuevos no son clicables.
+  // Adjunta el Transformer al nodo seleccionado y REPINTA escena + grafo de
+  // "hit" de forma síncrona. Konva no refresca el hit al mover/redimensionar
+  // por props controladas, y entonces un elemento movido deja de ser
+  // agarrable en el sitio nuevo (el 2º arrastre "no sirve"). `elements` no
+  // cambia durante un arrastre, así que esto nunca corre a mitad de gesto.
   useEffect(() => {
     const tr = trRef.current;
     if (!tr) return;
     const node = selectedId ? nodeRefs.current[selectedId] : null;
     tr.nodes(node ? [node] : []);
-    const layer = tr.getLayer();
-    if (layer) {
-      layer.draw(); // escena + hit, síncrono
-    }
-  }, [elements, selectedId, background, backgroundColor]);
+    tr.getLayer()?.draw();
+  }, [selectedId, elements, background, backgroundColor]);
 
   const handleTransformEnd = (el) => {
     const node = nodeRefs.current[el.id];
@@ -210,18 +209,17 @@ export default function CardCanvas({
                 align={el.align || "left"}
                 fill={el.fill}
                 draggable
-                onClick={() => onSelect(el.id)}
-                onTap={() => onSelect(el.id)}
+                onMouseDown={() => onSelect(el.id)}
+                onTouchStart={() => onSelect(el.id)}
                 onDblClick={() => onEditText(el.id)}
                 onDblTap={() => onEditText(el.id)}
-                onDragEnd={(e) => {
+                onDragEnd={(e) =>
                   onChange(
                     el.id,
                     { x: e.target.x(), y: e.target.y() },
                     { commit: true }
-                  );
-                  onSelect(el.id);
-                }}
+                  )
+                }
                 onTransformEnd={() => handleTransformEnd(el)}
                 ref={getRefCb(el.id)}
               />
