@@ -1,10 +1,10 @@
--- Papelera — almacenamiento de imágenes de usuario (Fase 2)
+-- Cartario — almacenamiento de imágenes de usuario (Fase 2)
 -- Ejecuta este archivo completo en Supabase → SQL Editor → New query.
 -- (Es idempotente: se puede volver a ejecutar sin romper nada.)
 
--- Bucket público para las imágenes que suben los usuarios a sus tarjetas.
+-- Bucket público para las imágenes que suben los usuarios a sus cartas.
 -- Público = cualquiera con la URL puede verla (necesario para compartir la
--- tarjeta en la Fase 4). La escritura sí está restringida por las políticas.
+-- carta en la Fase 4). La escritura sí está restringida por las políticas.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'card-images',

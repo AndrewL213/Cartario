@@ -1,9 +1,9 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Papelera — cartas digitales con alma de papel",
+  title: "Cartario — cartas digitales con alma de papel",
   description:
-    "Crea tarjetas digitales con textura de papel, tipografías manuscritas y stickers. Personaliza sin límites.",
+    "Crea cartas digitales con textura de papel, tipografías manuscritas y stickers. Personaliza sin límites.",
 };
 
 export default function RootLayout({ children }) {

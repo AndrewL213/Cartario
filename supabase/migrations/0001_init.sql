@@ -1,4 +1,4 @@
--- Papelera — esquema inicial (Fase 1)
+-- Cartario — esquema inicial (Fase 1)
 -- Ejecuta este archivo completo en Supabase → SQL Editor → New query.
 
 -- ---------------------------------------------------------------------------
@@ -46,8 +46,8 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ---------------------------------------------------------------------------
--- cards: una tarjeta. user_id nullable para permitir, más adelante, importar
--- tarjetas de invitado. content_json guarda el array `elements` del canvas.
+-- cards: una carta. user_id nullable para permitir, más adelante, importar
+-- cartas de invitado. content_json guarda el array `elements` del canvas.
 -- ---------------------------------------------------------------------------
 create table if not exists public.cards (
   id           uuid primary key default gen_random_uuid(),
@@ -64,7 +64,7 @@ create index if not exists cards_public_idx on public.cards (id) where is_public
 
 alter table public.cards enable row level security;
 
--- Lectura: el dueño siempre; cualquiera si la tarjeta es pública (Fase 4).
+-- Lectura: el dueño siempre; cualquiera si la carta es pública (Fase 4).
 drop policy if exists "cards: leer propias o públicas" on public.cards;
 create policy "cards: leer propias o públicas"
   on public.cards for select

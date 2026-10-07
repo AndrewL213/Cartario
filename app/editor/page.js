@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Editor from "../../components/Editor";
 
 export const metadata = {
-  title: "Editor — Papelera",
+  title: "Editor — Cartario",
 };
 
 export default function EditorPage() {

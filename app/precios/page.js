@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSupabaseServer } from "../../lib/supabase/server";
+import { loadIsPremium, AI_DAILY_LIMIT } from "../../lib/access";
 import SubscribeButton from "../../components/SubscribeButton";
 import ManageSubscriptionButton from "../../components/ManageSubscriptionButton";
 import styles from "./precios.module.css";
@@ -7,45 +8,37 @@ import styles from "./precios.module.css";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Precios — Papelera",
+  title: "Precios — Cartario",
 };
 
 export default async function PreciosPage({ searchParams }) {
   const checkout = searchParams?.checkout;
-  let isSubscriber = false;
+  let isPremium = false;
   const supabase = getSupabaseServer();
   if (supabase) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user) {
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("is_subscriber")
-        .eq("id", user.id)
-        .maybeSingle();
-      isSubscriber = !!prof?.is_subscriber;
-    }
+    if (user) isPremium = await loadIsPremium(supabase, user.id);
   }
 
   return (
     <main className={styles.main}>
       <Link href="/" className={styles.back}>
-        ← Papelera
+        ← Cartario
       </Link>
 
       <h1 className={styles.title}>Un plan sencillo</h1>
       <p className={styles.lead}>
-        Lo básico es gratis para siempre. En el plan gratis, cada anuncio
-        desbloquea sus extras solo en la tarjeta en la que estás. La
-        suscripción quita los anuncios y la marca de agua en{" "}
-        <strong>todas tus tarjetas y proyectos</strong>.
+        Crear y enviar cartas es gratis. Premium es una sola suscripción, “Sin
+        anuncios”, que además abre todo el catálogo y la decoración avanzada de
+        tus cartas.
       </p>
 
       {checkout === "success" && (
         <p className={`${styles.banner} ${styles.bannerOk}`}>
-          ¡Listo! Si el pago se confirmó, tu cuenta pasará a "sin anuncios" en
-          unos segundos. Recarga si no lo ves al instante.
+          ¡Listo! Si el pago se confirmó, tu cuenta pasará a Premium en unos
+          segundos. Recarga si no lo ves al instante.
         </p>
       )}
       {checkout === "cancel" && (
@@ -61,44 +54,43 @@ export default async function PreciosPage({ searchParams }) {
             <strong>0 €</strong> / siempre
           </p>
           <ul className={styles.features}>
-            <li>Editor completo: texto, stickers, fondos, capas, deshacer</li>
-            <li>3 imágenes propias por tarjeta</li>
-            <li>
-              Extras premium viendo un anuncio corto por bloque, y solo en esa
-              tarjeta (hay que repetirlo en cada tarjeta nueva)
-            </li>
-            <li>Marca de agua pequeña al exportar o compartir</li>
+            <li>Editor manual completo, sin anuncios</li>
+            <li>Stickers, tipografías y fondos gratuitos</li>
             <li>Guardar en tu cuenta y compartir por enlace</li>
+            <li>
+              Cartas con IA: hasta {AI_DAILY_LIMIT} al día, con anuncios
+              laterales <span className={styles.muted}>(próximamente)</span>
+            </li>
+            <li>Marca de agua pequeña al descargar la carta como imagen</li>
           </ul>
-          <span className={styles.currentBtn}>Tu plan actual</span>
+          <span className={styles.currentBtn}>
+            {isPremium ? "Plan gratuito" : "Tu plan actual"}
+          </span>
         </div>
 
         <div className={`${styles.plan} ${styles.planFeatured}`}>
-          <p className={styles.planName}>Sin anuncios</p>
+          <p className={styles.planName}>Premium · Sin anuncios</p>
           <p className={styles.price}>
             <strong>1,99 €</strong> <span className={styles.muted}>/ mes</span>
           </p>
           <ul className={styles.features}>
             <li>
-              Cero anuncios en <strong>todas tus tarjetas y proyectos</strong>,
-              siempre
+              Sin anuncios, en <strong>todas tus cartas</strong>
+            </li>
+            <li>Todo el catálogo Premium: stickers, tipografías y fondos</li>
+            <li>Sin marca de agua al descargar</li>
+            <li>
+              Decoración avanzada del sobre: diseño, textura y texto{" "}
+              <span className={styles.muted}>(próximamente)</span>
             </li>
             <li>
-              Toda la biblioteca premium desbloqueada en todas las tarjetas
-            </li>
-            <li>Imágenes propias sin límite</li>
-            <li>Sin marca de agua al exportar ni al compartir</li>
-            <li>
-              Sube tus propios stickers <span className={styles.muted}>(próximamente)</span>
-            </li>
-            <li>
-              Fuentes propias en tu dispositivo{" "}
+              Sube tus propios stickers{" "}
               <span className={styles.muted}>(próximamente)</span>
             </li>
           </ul>
-          {isSubscriber ? (
+          {isPremium ? (
             <>
-              <span className={styles.currentBtn}>Ya estás suscrito ✓</span>
+              <span className={styles.currentBtn}>Ya eres Premium ✓</span>
               <ManageSubscriptionButton className={styles.subscribeBtn} />
             </>
           ) : (

@@ -7,20 +7,20 @@ export default function Home() {
     <main className={styles.main}>
       <section className={styles.hero}>
         <div className={styles.heroText}>
-          <p className={styles.kicker}>Papelera</p>
+          <p className={styles.kicker}>Cartario</p>
           <h1 className={styles.headline}>
             Escribe algo que se sienta
             <br />
             escrito a mano.
           </h1>
           <p className={styles.sub}>
-            Tarjetas digitales con textura de papel, letras que parecen
+            Cartas digitales con textura de papel, letras que parecen
             trazadas y stickers que no encontrarás en ningún otro editor.
-            Empieza gratis; desbloquea más detalles a tu ritmo.
+            Empieza gratis; Premium suma el catálogo completo y quita los anuncios.
           </p>
           <div className={styles.actions}>
             <Link href="/editor" className={styles.primaryBtn}>
-              Crear una tarjeta
+              Crear una carta
             </Link>
             <span className={styles.hint}>
               No necesitas cuenta para probar ·{" "}
@@ -56,9 +56,9 @@ export default function Home() {
         <div className={styles.detailCol}>
           <h2 className={styles.detailTitle}>Gratis para empezar</h2>
           <p className={styles.detailBody}>
-            Las herramientas básicas no cuestan nada. Los extras se
-            desbloquean viendo un anuncio corto o con una suscripción baja,
-            tú eliges. <Link href="/precios">Ver precios</Link>.
+            El editor y el envío de cartas no cuestan nada, y sin anuncios.
+            Premium es una suscripción baja que abre todo el catálogo y la
+            decoración avanzada. <Link href="/precios">Ver Premium</Link>.
           </p>
         </div>
       </section>

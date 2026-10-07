@@ -187,11 +187,6 @@
   outline-offset: 2px;
 }
 
-.btnPremium {
-  border-color: var(--clay);
-  color: var(--clay-deep);
-}
-
 .iconRow {
   display: flex;
   gap: 6px;
@@ -762,86 +757,9 @@
   color: var(--sage-deep);
 }
 
-.block {
-  border: 1px solid var(--paper-line);
-  border-radius: 6px;
-  padding: 10px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.blockOn {
-  border-color: var(--sage);
-  background: rgba(110, 127, 92, 0.08);
-}
-
-.blockHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13.5px;
-  color: var(--ink);
-}
-
-.blockState {
-  font-size: 11px;
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-
-.blockOn .blockState {
-  color: var(--sage-deep);
-  font-weight: 600;
-}
-
-.blockDesc {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--ink-soft);
-}
-
-.blockBtn {
-  margin-top: 2px;
-  padding: 9px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  border-radius: 4px;
-  background: var(--clay);
-  color: #fff;
-  cursor: pointer;
-}
-
-.blockBtn:hover {
-  background: var(--clay-deep);
-}
-
-.blockBtn:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-
 .blockNote {
   margin: 2px 0 0;
   font-size: 12px;
   line-height: 1.45;
   color: var(--ink-soft);
-}
-
-.adBar {
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(42, 38, 32, 0.12);
-  overflow: hidden;
-}
-
-.adBarFill {
-  display: block;
-  height: 100%;
-  background: var(--clay);
-  transition: width 0.2s linear;
 }

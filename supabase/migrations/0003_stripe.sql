@@ -1,4 +1,4 @@
--- Papelera — suscripciones con Stripe (Fase 3)
+-- Cartario — suscripciones con Stripe (Fase 3)
 -- Ejecuta este archivo completo en Supabase → SQL Editor → New query.
 -- (Es idempotente.)
 

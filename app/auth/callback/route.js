@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer } from "../../../lib/supabase/server";
 
 // Recibe el enlace del magic link, canjea el código por una sesión y
-// redirige a `next` (por defecto, /mis-tarjetas).
+// redirige a `next` (por defecto, /mis-cartas).
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") || "/mis-tarjetas";
+  const next = searchParams.get("next") || "/mis-cartas";
 
   if (code) {
     const supabase = getSupabaseServer();

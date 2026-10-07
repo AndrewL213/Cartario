@@ -17,7 +17,7 @@ export const CARD_WIDTH = 480;
 export const CARD_HEIGHT = 620;
 export const CARD_BG = "#f6f1e4";
 
-// Fondo de la tarjeta: color base (o color propio) + patrón repetido opcional.
+// Fondo de la carta: color base (o color propio) + patrón repetido opcional.
 function CardBackground({ bgId, bgColor }) {
   const bg = BG_BY_ID[bgId] || BG_BY_ID.plain;
   const dataUrl = useMemo(() => backgroundTileDataUrl(bg), [bg]);
@@ -239,7 +239,7 @@ export default function CardCanvas({
 
         {showWatermark && (
           <Text
-            text="Hecho con Papelera"
+            text="Hecho con Cartario"
             x={CARD_WIDTH - 174}
             y={CARD_HEIGHT - 24}
             width={160}

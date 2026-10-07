@@ -2,12 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "../../lib/supabase/server";
 import DeleteCardButton from "../../components/DeleteCardButton";
-import styles from "./misTarjetas.module.css";
+import styles from "./misCartas.module.css";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Mis tarjetas — Papelera",
+  title: "Mis cartas — Cartario",
 };
 
 function formatDate(value) {
@@ -22,14 +22,14 @@ function formatDate(value) {
   }
 }
 
-export default async function MisTarjetasPage() {
+export default async function MisCartasPage() {
   const supabase = getSupabaseServer();
-  if (!supabase) redirect("/entrar?next=/mis-tarjetas");
+  if (!supabase) redirect("/entrar?next=/mis-cartas");
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/entrar?next=/mis-tarjetas");
+  if (!user) redirect("/entrar?next=/mis-cartas");
 
   const { data: cards, error } = await supabase
     .from("cards")
@@ -40,25 +40,25 @@ export default async function MisTarjetasPage() {
     <main className={styles.main}>
       <div className={styles.topBar}>
         <Link href="/" className={styles.back}>
-          ← Papelera
+          ← Cartario
         </Link>
         <Link href="/editor" className={styles.newLink}>
-          Nueva tarjeta
+          Nueva carta
         </Link>
       </div>
 
-      <h1 className={styles.title}>Mis tarjetas</h1>
+      <h1 className={styles.title}>Mis cartas</h1>
       <p className={styles.meta}>{user.email}</p>
 
       {error && (
         <p className={styles.empty}>
-          No se pudieron cargar tus tarjetas: {error.message}
+          No se pudieron cargar tus cartas: {error.message}
         </p>
       )}
 
       {!error && (!cards || cards.length === 0) && (
         <div className={styles.empty}>
-          Todavía no has guardado ninguna tarjeta.
+          Todavía no has guardado ninguna carta.
           <br />
           <Link href="/editor" className={styles.back}>
             Crear la primera →
@@ -72,7 +72,7 @@ export default async function MisTarjetasPage() {
             <li key={card.id} className={styles.item}>
               <Link href={`/editor?id=${card.id}`} className={styles.itemLink}>
                 <span className={styles.itemTitle}>
-                  {card.title || "Tarjeta sin título"}
+                  {card.title || "Carta sin título"}
                   {card.is_public && <span className={styles.badge}>pública</span>}
                 </span>
                 <span className={styles.itemMeta}>

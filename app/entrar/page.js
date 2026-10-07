@@ -9,7 +9,7 @@ import styles from "./entrar.module.css";
 
 function EntrarInner() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/mis-tarjetas";
+  const next = searchParams.get("next") || "/mis-cartas";
   const hadError = searchParams.get("error") === "auth";
 
   const [email, setEmail] = useState("");
@@ -49,13 +49,13 @@ function EntrarInner() {
   return (
     <main className={styles.main}>
       <Link href="/" className={styles.back}>
-        ← Papelera
+        ← Cartario
       </Link>
 
       <h1 className={styles.title}>Entra con tu correo</h1>
       <p className={styles.sub}>
         Sin contraseña. Te mandamos un enlace de un solo uso; al abrirlo,
-        quedas dentro. Tus tarjetas de invitado se pueden guardar en la cuenta
+        quedas dentro. Tus cartas de invitado se pueden guardar en la cuenta
         después.
       </p>
 
@@ -63,7 +63,7 @@ function EntrarInner() {
         <div className={styles.disabledBox}>
           El inicio de sesión aún no está conectado (falta configurar Supabase
           en <code>.env.local</code>). Mientras tanto, el editor funciona en
-          modo invitado y guarda tu tarjeta en este navegador.
+          modo invitado y guarda tu carta en este navegador.
         </div>
       ) : (
         <form className={styles.form} onSubmit={handleSubmit}>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-// Mensaje decorativo de la tarjeta del hero. Cambia en cada visita.
+// Mensaje decorativo de la carta del hero. Cambia en cada visita.
 const MESSAGES = [
   ["Feliz cumpleaños,", "Ana"],
   ["Gracias por todo,", "abuela"],

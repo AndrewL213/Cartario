@@ -14,5 +14,5 @@ La atribución visible al usuario está en la página `/precios` y en el pie
 del sitio. No modificar estos archivos salvo el atributo `width`/`height`
 añadido para el renderizado en canvas.
 
-Los stickers de `../free/` son originales, creados para Papelera, sin
+Los stickers de `../free/` son originales, creados para Cartario, sin
 restricción de uso.

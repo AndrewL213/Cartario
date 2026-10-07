@@ -12,7 +12,7 @@ export default function DeleteCardButton({ id }) {
   const handleDelete = async () => {
     const supabase = getSupabaseBrowser();
     if (!supabase) return;
-    if (!window.confirm("¿Borrar esta tarjeta? No se puede deshacer.")) return;
+    if (!window.confirm("¿Borrar esta carta? No se puede deshacer.")) return;
 
     setBusy(true);
     try {

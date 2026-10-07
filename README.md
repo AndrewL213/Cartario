@@ -1,79 +1,96 @@
-# Papelera — MVP
+# Cartario
 
-Tarjetas digitales con textura de papel, tipografías con carácter y stickers.
-Modelo freemium: extras se desbloquean viendo un anuncio corto o con
-suscripción (el anuncio real aún no está integrado, ver más abajo).
+Cartas digitales con estética física y manuscrita (textura de papel, tipografías
+con carácter, stickers e imágenes propias), pensadas para enviarse a alguien
+querido. Producto freemium para Latinoamérica hispanohablante (lanzamiento en
+Colombia). Toda la interfaz va en español.
 
-## Qué incluye este MVP
-
-- `app/page.js` — landing page
-- `app/editor/page.js` + `components/Editor.js` — editor de tarjetas
-  (canvas con Konva en `components/CardCanvas.js`), con modo invitado y
-  "guardar en tu cuenta"
-- `app/entrar` — inicio de sesión por magic link (sin contraseña)
-- `app/mis-tarjetas` — listado de tarjetas guardadas del usuario
-- `lib/supabase/*` — clientes de Supabase (navegador, servidor, middleware)
-- `lib/localCard.js` — borrador de invitado en localStorage
-- `supabase/migrations/0001_init.sql` — esquema (`profiles`, `cards`)
-- Flujo de "desbloqueo por anuncio" simulado (ver `handleWatchAd` en
-  `components/Editor.js`)
+> Antes se llamaba "Papelera"; ese nombre se abandonó por completo.
 
 ## Cómo correrlo
 
 ```bash
 npm install
+cp .env.example .env.local   # en Windows: copy .env.example .env.local
 npm run dev
 ```
 
-Abre http://localhost:3000
+Abre http://localhost:3000. Sin variables de entorno el editor funciona en **modo
+invitado** (la carta se guarda en el navegador).
 
-Sin configurar Supabase, el editor funciona en **modo invitado** (la
-tarjeta se guarda en el navegador). Para activar cuentas y guardado en la
-nube, configura Supabase (siguiente sección).
+> Si el servidor "no carga" (CSS/JS con 404): casi siempre hay más de un
+> `npm run dev` abierto o la carpeta `.next` quedó corrupta. Cierra todo
+> (`taskkill /F /IM node.exe`), borra `.next` y arranca **uno solo**.
 
-## Configurar Supabase
+## Variables de entorno (`.env.local`, nunca se sube al repo)
 
-1. Crea un proyecto gratis en https://supabase.com.
-2. En **Project Settings → API**, copia:
-   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
-   - **anon public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Pega esos valores en `.env.local` (usa `.env.local.example` de
-   plantilla). Reinicia `npm run dev`.
-4. En **SQL Editor → New query**, pega y ejecuta el contenido de
-   `supabase/migrations/0001_init.sql`.
-5. En **Authentication → URL Configuration**, añade
-   `http://localhost:3000/**` a *Redirect URLs* (y la URL de producción
-   cuando despliegues).
+| Variable | Para qué | Dónde se obtiene |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Cuentas y cartas | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | idem (clave pública) | idem |
+| `SUPABASE_SERVICE_ROLE_KEY` | Webhook de Stripe (solo servidor, secreta) | idem |
+| `STRIPE_SECRET_KEY` | Checkout y portal (modo test: `sk_test_…`) | Stripe → Developers → API keys |
+| `STRIPE_PRICE_ID` | Precio recurrente de Premium (`price_…`) | Stripe → Products |
+| `STRIPE_WEBHOOK_SECRET` | Firma del webhook (`whsec_…`) | `stripe listen --forward-to localhost:3000/api/stripe/webhook` |
 
-El envío de emails integrado de Supabase está limitado a unos pocos por
-hora; suficiente para desarrollo. Para producción, configura SMTP propio
-en **Authentication → Emails**.
+`.env.example` trae la plantilla. Sin las claves de Stripe, `/api/stripe/*`
+responde `503 not-configured` y el resto de la app sigue funcionando.
 
-## Próximos pasos (en orden de prioridad)
+## Base de datos (Supabase)
 
-1. **Editor completo** — subir imágenes propias (Supabase Storage),
-   selector de fuentes, capas, redimensionar/rotar (Konva Transformer),
-   deshacer/rehacer, set de stickers SVG con licencia.
-2. **Monetización real** — SDK de anuncios recompensados de Google en el
-   modal (`components/Editor.js`), página `/precios` con Stripe Checkout
-   (modo test), estado premium en `profiles.is_subscriber`.
-3. **Compartir y recibir** — ruta pública `/tarjeta/[id]` en solo lectura
-   con animación de apertura, botón "Enviar" (link + WhatsApp/email),
-   exportar a PNG.
-4. **Pulido y medición** — Google Analytics (eventos), usabilidad móvil,
-   accesibilidad, plantillas de temporada.
+Ejecuta, en orden, en Supabase → SQL Editor:
 
-## Desplegar gratis
+1. `supabase/migrations/0001_init.sql` — `profiles` y `cards` (con RLS).
+2. `supabase/migrations/0002_storage.sql` — bucket `card-images` para imágenes propias.
+3. `supabase/migrations/0003_stripe.sql` — columnas de Stripe en `profiles`.
+
+Y en Authentication → URL Configuration añade `http://localhost:3000/**`.
+
+## Modelo de acceso (resumen)
+
+Un solo sistema: **Premium = la suscripción "Sin anuncios"**. Las reglas viven
+en `lib/access.js` (cliente y servidor usan el mismo módulo):
+
+- Editor manual: **sin anuncios**. Los elementos marcados 🔒 (stickers,
+  tipografías y fondos Premium) solo se abren con Premium.
+- Página de recepción de cartas: **nunca** lleva anuncios.
+- Flujo con el agente de IA: anuncios laterales (no Premium) y máximo 3 cartas
+  generadas al día por usuario.
+- Decoración de embeds: gratis = stickers, imágenes y cambio de sellos/logos;
+  solo Premium = sobre, diseño, textura y texto.
+
+## Estado por fases
+
+- **Fase 0 — Limpieza y renombre**: hecha (este commit).
+- Fase 1 — Cuentas y persistencia (esquema `letters`, `deliveries`, `ai_usage`).
+- Fase 2 — Editor manual completo.
+- Fase 3 — Embeds y página de recepción `/c/[id]`.
+- Fase 4 — Agente de Cartario (IA) y anuncios.
+- Fase 5 — Biblioteca, envío y programación.
+- Fase 6 — Premium e integraciones.
+- Fase 7 — Pulido y medición.
+
+Hoy el editor y la base siguen con el esquema anterior (`cards`, columna
+`profiles.is_subscriber`); la Fase 1 los migra a `letters` / `is_premium`.
+
+## Stack
+
+Next.js 14 (App Router) · React 18 · CSS Modules (sin Tailwind) · react-konva ·
+Supabase (Postgres, Auth por magic link, Storage) · Stripe (modo test).
+Identidad: crema `#f6f1e4`, tinta `#2a2620`, arcilla `#b4614f`, salvia `#6e7f5c`;
+Fraunces + Inter.
+
+## Licencias de los stickers
+
+- `public/stickers/free/`: ilustraciones originales de Cartario.
+- `public/stickers/premium/`: OpenMoji, CC BY-SA 4.0 (requiere atribución; ver
+  `public/stickers/premium/CREDITS.md`). Pendiente de revisión de licencias en
+  la Fase 2 antes de lanzar.
+
+## Despliegue
 
 ```bash
 npx vercel
 ```
 
-Define las mismas variables de entorno (`NEXT_PUBLIC_SUPABASE_URL`,
-`NEXT_PUBLIC_SUPABASE_ANON_KEY`) en el panel de Vercel.
-
-## Nota sobre licencias
-
-Los stickers de este MVP son placeholders geométricos (círculos de color).
-Antes de lanzar, sustitúyelos por ilustraciones con licencia clara
-(compradas, creadas a medida, o de bancos con licencia comercial).
+Define en Vercel las mismas variables de entorno.
