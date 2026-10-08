@@ -27,7 +27,7 @@ import { useEditorHistory } from "../lib/useEditorHistory";
 import { STICKERS } from "../lib/stickers";
 import { FONTS, FONT_BY_VALUE, DEFAULT_FONT } from "../lib/fonts";
 import { BACKGROUNDS, DEFAULT_BG } from "../lib/backgrounds";
-import { getAccess, loadIsPremium } from "../lib/access";
+import { showRewardedAd } from "../lib/ads";
 import styles from "../app/editor/editor.module.css";
 
 const CardCanvas = dynamic(() => import("./CardCanvas"), {
@@ -36,6 +36,7 @@ const CardCanvas = dynamic(() => import("./CardCanvas"), {
 });
 
 const CARD_W = 480;
+const FREE_IMAGE_LIMIT = 3; // imágenes propias por carta antes del muro
 const CARD_H = 620;
 const DEFAULT_TITLE = "Carta sin título";
 const INK = "#2a2620";
@@ -90,12 +91,23 @@ export default function Editor() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
-  // Premium = suscripción "Sin anuncios". El editor manual no tiene anuncios:
-  // los elementos marcados `premium` solo se abren con Premium.
-  const [isPremium, setIsPremium] = useState(false);
-  const [premiumPrompt, setPremiumPrompt] = useState(null); // qué elemento Premium se intentó usar
+  // Desbloqueo por BLOQUES (por carta). El suscriptor lo tiene todo.
+  //   contenido = stickers + imágenes sin límite
+  //   estilo    = tipografías + fondos premium
+  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [unlocked, setUnlocked] = useState({ contenido: false, estilo: false });
+  const [adBlock, setAdBlock] = useState(null); // bloque que abrió el modal
+  const [adPlaying, setAdPlaying] = useState(false);
+  const [adSecondsLeft, setAdSecondsLeft] = useState(0);
   const [showExportModal, setShowExportModal] = useState(false);
-  const access = getAccess({ user, isPremium });
+
+  const CAT_BLOCK = {
+    stickers: "contenido",
+    images: "contenido",
+    fonts: "estilo",
+    backgrounds: "estilo",
+  };
+  const has = (cat) => isSubscriber || unlocked[CAT_BLOCK[cat]];
 
   const history = useEditorHistory([]);
   const { elements, commit, replace, checkpoint, undo, redo, reset, canUndo, canRedo } =
@@ -127,7 +139,12 @@ export default function Editor() {
         currentUser = data?.user || null;
         setUser(currentUser);
         if (currentUser) {
-          setIsPremium(await loadIsPremium(supabase, currentUser.id));
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("is_subscriber")
+            .eq("id", currentUser.id)
+            .maybeSingle();
+          setIsSubscriber(!!prof?.is_subscriber);
         }
       }
 
@@ -287,15 +304,14 @@ export default function Editor() {
       fill: INK,
     });
 
-  // Si el elemento es Premium y no lo eres, abre el aviso (sin anuncios).
-  const requirePremium = (item, label) => {
-    if (access.canUseItem(item)) return true;
-    setPremiumPrompt(label);
+  const requireUnlock = (cat) => {
+    if (has(cat)) return true;
+    setAdBlock(CAT_BLOCK[cat]);
     return false;
   };
 
   const addSticker = (sticker) => {
-    if (!requirePremium(sticker, `El sticker «${sticker.label}»`)) return;
+    if (sticker.premium && !requireUnlock("stickers")) return;
     addElement({
       type: "sticker",
       src: sticker.src,
@@ -308,9 +324,19 @@ export default function Editor() {
     });
   };
 
+  const imageCount = useMemo(
+    () => elements.filter((e) => e.type === "image").length,
+    [elements]
+  );
+  const imagesLocked = !has("images") && imageCount >= FREE_IMAGE_LIMIT;
+
   const handlePickImage = () => {
     if (!user) {
       setUploadError("Entra con tu correo para subir tus propias imágenes.");
+      return;
+    }
+    if (imagesLocked) {
+      setAdBlock("contenido");
       return;
     }
     setUploadError("");
@@ -323,6 +349,10 @@ export default function Editor() {
     if (!file) return;
     const supabase = getSupabaseBrowser();
     if (!supabase || !user) return;
+    if (imagesLocked) {
+      setAdBlock("contenido");
+      return;
+    }
 
     setUploading(true);
     setUploadError("");
@@ -378,7 +408,7 @@ export default function Editor() {
 
   const changeFont = (value) => {
     const font = FONT_BY_VALUE[value];
-    if (font && !requirePremium(font, `La tipografía ${font.label}`)) return;
+    if (font?.premium && !requireUnlock("fonts")) return;
     patchElement(selectedId, { fontFamily: value }, { commit: true });
     // asegura que la fuente esté descargada y repinta el lienzo
     if (typeof document !== "undefined" && document.fonts) {
@@ -391,7 +421,7 @@ export default function Editor() {
 
   const changeBackground = (id) => {
     const bg = BACKGROUNDS.find((b) => b.id === id);
-    if (bg && !requirePremium(bg, `El fondo «${bg.label}»`)) return;
+    if (bg?.premium && !requireUnlock("backgrounds")) return;
     setBackground(id);
     setBackgroundColor(null); // vuelve al color base del preset elegido
     markDirty();
@@ -501,11 +531,41 @@ export default function Editor() {
   };
 
   const handleExport = () => {
-    if (!access.isPremium) {
+    if (!isSubscriber) {
       setShowExportModal(true);
       return;
     }
     runExport();
+  };
+
+  // --- anuncio recompensado (ver lib/ads.js) -----------------------
+  // Un anuncio desbloquea un BLOQUE entero.
+  const BLOCK_LABELS = {
+    contenido: "los stickers y las imágenes sin límite",
+    estilo: "las tipografías y los fondos premium",
+  };
+  const BLOCK_SHORT = {
+    contenido: "stickers e imágenes",
+    estilo: "tipografías y fondos",
+  };
+  const handleWatchAd = async () => {
+    const block = adBlock;
+    if (!block || adPlaying) return;
+    setAdPlaying(true);
+    setAdSecondsLeft(4);
+    try {
+      const { rewarded } = await showRewardedAd(block, {
+        onTick: (ms) => setAdSecondsLeft(Math.ceil(ms / 1000)),
+      });
+      if (rewarded) setUnlocked((u) => ({ ...u, [block]: true }));
+    } finally {
+      setAdPlaying(false);
+      setAdBlock(null);
+    }
+  };
+  const closeAdModal = () => {
+    if (adPlaying) return;
+    setAdBlock(null);
   };
 
   const saveLabel = !user
@@ -521,15 +581,25 @@ export default function Editor() {
           ← Cartario
         </Link>
         <div className={styles.account}>
-          {access.isPremium && (
-            <span className={styles.unlockedBadge}>Premium</span>
+          {isSubscriber ? (
+            <span className={styles.unlockedBadge}>Plan sin anuncios</span>
+          ) : (
+            ["contenido", "estilo"].some((b) => unlocked[b]) && (
+              <span className={styles.unlockedBadge}>
+                Desbloqueado:{" "}
+                {["contenido", "estilo"]
+                  .filter((b) => unlocked[b])
+                  .map((b) => BLOCK_SHORT[b])
+                  .join(" · ")}
+              </span>
+            )
           )}
           {configured && user && (
             <>
               <span>{user.email}</span>
-              {!access.isPremium && (
+              {!isSubscriber && (
                 <Link href="/precios" className={styles.accountLink}>
-                  Premium
+                  Sin anuncios
                 </Link>
               )}
               <Link href="/mis-cartas" className={styles.accountLink}>
@@ -576,7 +646,7 @@ export default function Editor() {
               elements={elements}
               background={background}
               backgroundColor={backgroundColor}
-              showWatermark={!access.isPremium}
+              showWatermark={!isSubscriber}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onChange={patchElement}
@@ -599,11 +669,15 @@ export default function Editor() {
                 </button>
                 <button
                   type="button"
-                  className={styles.btn}
+                  className={`${styles.btn} ${imagesLocked ? styles.btnPremium : ""}`}
                   onClick={handlePickImage}
                   disabled={uploading}
                 >
-                  {uploading ? "Subiendo…" : "+ Imagen"}
+                  {uploading
+                    ? "Subiendo…"
+                    : imagesLocked
+                    ? "+ Imagen 🔒"
+                    : "+ Imagen"}
                 </button>
                 <input
                   ref={fileInputRef}
@@ -619,17 +693,24 @@ export default function Editor() {
                   gratis funcionan sin registrarse.
                 </p>
               )}
+              {user && !has("images") && (
+                <p className={styles.uploadNote}>
+                  {Math.min(imageCount, FREE_IMAGE_LIMIT)}/{FREE_IMAGE_LIMIT}{" "}
+                  imágenes gratis en esta carta.
+                  {imagesLocked && " Mira un anuncio o suscríbete para añadir más."}
+                </p>
+              )}
               {uploadError && <p className={styles.errorNote}>{uploadError}</p>}
             </div>
 
             {/* fondo */}
             <div className={styles.group}>
               <p className={styles.groupTitle}>
-                Fondo {!access.isPremium && "· 🔒 = Premium"}
+                Fondo {!has("backgrounds") && "· 🔒 = premium"}
               </p>
               <div className={styles.bgGrid}>
                 {BACKGROUNDS.map((b) => {
-                  const locked = !access.canUseItem(b);
+                  const locked = b.premium && !has("backgrounds");
                   const active = background === b.id;
                   return (
                     <button
@@ -706,11 +787,11 @@ export default function Editor() {
             {/* stickers */}
             <div className={styles.group}>
               <p className={styles.groupTitle}>
-                Stickers {!access.isPremium && "· 🔒 = Premium"}
+                Stickers {!has("stickers") && "· 🔒 = premium"}
               </p>
               <div className={styles.stickerGrid}>
                 {STICKERS.map((s) => {
-                  const locked = !access.canUseItem(s);
+                  const locked = s.premium && !has("stickers");
                   return (
                     <button
                       key={s.id}
@@ -827,7 +908,7 @@ export default function Editor() {
                           {FONTS.map((f) => (
                             <option key={f.value} value={f.value}>
                               {f.label} — {f.note}
-                              {!access.canUseItem(f) ? " 🔒" : ""}
+                              {f.premium && !has("fonts") ? " 🔒" : ""}
                             </option>
                           ))}
                         </select>
@@ -950,25 +1031,63 @@ export default function Editor() {
               )}
             </div>
 
-            {/* Premium: sin anuncios en el editor; los elementos 🔒 requieren el plan */}
-            {access.isPremium ? (
+            {/* premium: bloques de desbloqueo (al final del panel) */}
+            {isSubscriber ? (
               <div className={styles.premiumBox}>
                 <span className={styles.premiumAllOn}>
-                  ✓ Premium · todo el catálogo desbloqueado
+                  ✓ Plan sin anuncios · todo desbloqueado
                 </span>
               </div>
             ) : (
               <div className={styles.premiumBox}>
-                <p className={styles.premiumTitle}>Elementos Premium</p>
+                <p className={styles.premiumTitle}>Desbloquear premium</p>
                 <p className={styles.premiumSub}>
-                  Lo que lleva 🔒 (stickers, tipografías y fondos) forma parte de
-                  Cartario Premium. El editor nunca muestra anuncios.
+                  Cada anuncio desbloquea su bloque <strong>solo en esta
+                  carta</strong>. En otra carta habrá que volver a verlo.
                 </p>
+                {[
+                  {
+                    id: "contenido",
+                    label: "Stickers e imágenes",
+                    desc: "Stickers premium + fotos propias sin límite",
+                  },
+                  {
+                    id: "estilo",
+                    label: "Tipografías y fondos",
+                    desc: "Todas las fuentes y fondos premium",
+                  },
+                ].map((b) => (
+                  <div
+                    key={b.id}
+                    className={`${styles.block} ${
+                      unlocked[b.id] ? styles.blockOn : ""
+                    }`}
+                  >
+                    <div className={styles.blockHead}>
+                      <strong>{b.label}</strong>
+                      <span className={styles.blockState}>
+                        {unlocked[b.id] ? "✓ activo" : "🔒 bloqueado"}
+                      </span>
+                    </div>
+                    <p className={styles.blockDesc}>{b.desc}</p>
+                    {!unlocked[b.id] && (
+                      <button
+                        type="button"
+                        className={styles.blockBtn}
+                        onClick={() => setAdBlock(b.id)}
+                      >
+                        ▶ Ver 1 anuncio para desbloquear
+                      </button>
+                    )}
+                  </div>
+                ))}
                 <p className={styles.blockNote}>
+                  O{" "}
                   <Link href="/precios" className={styles.accountLink}>
-                    Ver Premium
+                    suscríbete
                   </Link>{" "}
-                  — sin anuncios y con la decoración avanzada de tus cartas.
+                  y ten todo desbloqueado, sin anuncios ni marca de agua, en{" "}
+                  <strong>todas tus cartas</strong>.
                 </p>
               </div>
             )}
@@ -1021,37 +1140,61 @@ export default function Editor() {
         )}
       </div>
 
-      {premiumPrompt && (
+      {adBlock && (
         <div
           className={styles.modalOverlay}
           role="dialog"
           aria-modal="true"
-          aria-labelledby="premium-modal-title"
+          aria-labelledby="ad-modal-title"
         >
           <div className={styles.modal}>
-            <h2 id="premium-modal-title" className={styles.modalTitle}>
-              Es un elemento Premium
-            </h2>
-            <p className={styles.modalBody}>
-              {premiumPrompt} forma parte de Cartario Premium. Con Premium no ves
-              anuncios y tienes todo el catálogo y la decoración avanzada de tus
-              cartas.
-            </p>
-            <div className={styles.modalActions}>
-              <Link
-                href="/precios"
-                className={styles.modalPrimary}
-                style={{ textAlign: "center", textDecoration: "none" }}
-              >
-                Ver Premium
-              </Link>
-              <button
-                onClick={() => setPremiumPrompt(null)}
-                className={styles.modalSecondary}
-              >
-                Ahora no
-              </button>
-            </div>
+            {adPlaying ? (
+              <>
+                <h2 id="ad-modal-title" className={styles.modalTitle}>
+                  Reproduciendo anuncio…
+                </h2>
+                <p className={styles.modalBody}>
+                  {adSecondsLeft > 0
+                    ? `${adSecondsLeft} s para desbloquear ${BLOCK_LABELS[adBlock]}.`
+                    : `Desbloqueando ${BLOCK_LABELS[adBlock]}…`}
+                </p>
+                <div className={styles.adBar} aria-hidden="true">
+                  <span
+                    className={styles.adBarFill}
+                    style={{ width: `${((4 - adSecondsLeft) / 4) * 100}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="ad-modal-title" className={styles.modalTitle}>
+                  Desbloquea {BLOCK_LABELS[adBlock]}
+                </h2>
+                <p className={styles.modalBody}>
+                  Un solo anuncio corto desbloquea {BLOCK_LABELS[adBlock]}{" "}
+                  <strong>solo en esta carta</strong>.{" "}
+                  <Link href="/precios" className={styles.accountLink}>
+                    O suscríbete
+                  </Link>{" "}
+                  y no verás anuncios ni marca de agua en ninguna de tus
+                  cartas.
+                </p>
+                <div className={styles.modalActions}>
+                  <button
+                    onClick={handleWatchAd}
+                    className={styles.modalPrimary}
+                  >
+                    Ver anuncio
+                  </button>
+                  <button
+                    onClick={closeAdModal}
+                    className={styles.modalSecondary}
+                  >
+                    Ahora no
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1069,7 +1212,7 @@ export default function Editor() {
             </h2>
             <p className={styles.modalBody}>
               Tu carta llevará un pequeño “Hecho con Cartario” en la esquina.
-              Con Premium se quita, y además no verás anuncios.
+              Con la suscripción se quita, y además no verás anuncios ni límites.
             </p>
             <div className={styles.modalActions}>
               <button

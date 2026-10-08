@@ -56,12 +56,18 @@ export default function Home() {
         <div className={styles.detailCol}>
           <h2 className={styles.detailTitle}>Gratis para empezar</h2>
           <p className={styles.detailBody}>
-            El editor y el envío de cartas no cuestan nada, y sin anuncios.
-            Premium es una suscripción baja que abre todo el catálogo y la
-            decoración avanzada. <Link href="/precios">Ver Premium</Link>.
+            Las herramientas básicas no cuestan nada. Los extras se
+            desbloquean viendo un anuncio corto o con una suscripción baja,
+            tú eliges. <Link href="/precios">Ver precios</Link>.
           </p>
         </div>
       </section>
+
+      <footer className={styles.footer}>
+        <Link href="/precios">Precios</Link>
+        <span aria-hidden="true"> · </span>
+        <Link href="/creditos">Créditos</Link>
+      </footer>
     </main>
   );
 }
