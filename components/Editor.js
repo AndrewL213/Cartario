@@ -12,17 +12,18 @@ import {
   saveDraft,
   clearDraft,
   setPendingSave,
-  takePendingSave,
 } from "../lib/localCard";
 import {
   createCard,
   updateCard,
   getCard,
+  migrateGuestDraft,
   elementsFromRow,
   backgroundFromRow,
   backgroundColorFromRow,
 } from "../lib/cards";
 import { uploadCardImage } from "../lib/storage";
+import { fetchUnlocks, saveUnlock, saveUnlocks } from "../lib/unlocks";
 import { useEditorHistory } from "../lib/useEditorHistory";
 import { STICKERS } from "../lib/stickers";
 import { FONTS, FONT_BY_VALUE, DEFAULT_FONT } from "../lib/fonts";
@@ -94,7 +95,7 @@ export default function Editor() {
   // Desbloqueo por BLOQUES (por carta). El suscriptor lo tiene todo.
   //   contenido = stickers + imágenes sin límite
   //   estilo    = tipografías + fondos premium
-  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [unlocked, setUnlocked] = useState({ contenido: false, estilo: false });
   const [adBlock, setAdBlock] = useState(null); // bloque que abrió el modal
   const [adPlaying, setAdPlaying] = useState(false);
@@ -107,7 +108,7 @@ export default function Editor() {
     fonts: "estilo",
     backgrounds: "estilo",
   };
-  const has = (cat) => isSubscriber || unlocked[CAT_BLOCK[cat]];
+  const has = (cat) => isPremium || unlocked[CAT_BLOCK[cat]];
 
   const history = useEditorHistory([]);
   const { elements, commit, replace, checkpoint, undo, redo, reset, canUndo, canRedo } =
@@ -141,25 +142,20 @@ export default function Editor() {
         if (currentUser) {
           const { data: prof } = await supabase
             .from("profiles")
-            .select("is_subscriber")
+            .select("is_premium")
             .eq("id", currentUser.id)
             .maybeSingle();
-          setIsSubscriber(!!prof?.is_subscriber);
+          setIsPremium(!!prof?.is_premium);
         }
       }
 
-      // guardado pendiente tras magic link
+      // Con sesión iniciada, lo que el invitado dejó en este navegador
+      // (borrador o guardado pendiente) pasa solo a la cuenta, sin pulsar
+      // "Guardar". Si falla, el borrador vuelve al navegador y se carga abajo.
       if (supabase && currentUser && !idParam) {
-        const pending = takePendingSave();
-        if (pending) {
-          try {
-            const row = await createCard(supabase, currentUser.id, {
-              title: pending.title,
-              elements: pending.elements,
-              background: pending.background,
-              backgroundColor: pending.backgroundColor,
-            });
-            clearDraft();
+        try {
+          const row = await migrateGuestDraft(supabase, currentUser.id);
+          if (row) {
             setCardId(row.id);
             setTitle(row.title);
             reset(elementsFromRow(row));
@@ -169,9 +165,9 @@ export default function Editor() {
             router.replace(`/editor?id=${row.id}`);
             setLoading(false);
             return;
-          } catch (err) {
-            setNotice("No se pudo guardar la carta pendiente: " + err.message);
           }
+        } catch (err) {
+          setNotice("No se pudo pasar tu borrador a la cuenta: " + err.message);
         }
       }
 
@@ -191,6 +187,11 @@ export default function Editor() {
             reset(elementsFromRow(row));
             setBackground(backgroundFromRow(row));
             setBackgroundColor(backgroundColorFromRow(row));
+            try {
+              setUnlocked(await fetchUnlocks(supabase, row.id));
+            } catch (err) {
+              setNotice("No se pudieron leer los desbloqueos: " + err.message);
+            }
             setLoading(false);
             return;
           }
@@ -496,6 +497,14 @@ export default function Editor() {
         setCardId(row.id);
         setTitle(row.title);
         clearDraft();
+        // lo desbloqueado en esta sesión se queda con la carta
+        if (!isPremium) {
+          try {
+            await saveUnlocks(supabase, row.id, user.id, unlocked);
+          } catch (err) {
+            setNotice("La carta se guardó, pero no los desbloqueos: " + err.message);
+          }
+        }
         router.replace(`/editor?id=${row.id}`);
       }
       setSaveState("saved");
@@ -531,7 +540,7 @@ export default function Editor() {
   };
 
   const handleExport = () => {
-    if (!isSubscriber) {
+    if (!isPremium) {
       setShowExportModal(true);
       return;
     }
@@ -557,7 +566,20 @@ export default function Editor() {
       const { rewarded } = await showRewardedAd(block, {
         onTick: (ms) => setAdSecondsLeft(Math.ceil(ms / 1000)),
       });
-      if (rewarded) setUnlocked((u) => ({ ...u, [block]: true }));
+      if (rewarded) {
+        setUnlocked((u) => ({ ...u, [block]: true }));
+        // con la carta ya guardada, el desbloqueo se registra en la base (que
+        // vigila el tope de 2); si no se puede, se cierra de nuevo
+        const supabase = getSupabaseBrowser();
+        if (supabase && user && cardId && !isPremium) {
+          try {
+            await saveUnlock(supabase, cardId, user.id, block);
+          } catch (err) {
+            setUnlocked((u) => ({ ...u, [block]: false }));
+            setNotice("No se pudo guardar el desbloqueo: " + err.message);
+          }
+        }
+      }
     } finally {
       setAdPlaying(false);
       setAdBlock(null);
@@ -581,7 +603,7 @@ export default function Editor() {
           ← Cartario
         </Link>
         <div className={styles.account}>
-          {isSubscriber ? (
+          {isPremium ? (
             <span className={styles.unlockedBadge}>Plan sin anuncios</span>
           ) : (
             ["contenido", "estilo"].some((b) => unlocked[b]) && (
@@ -597,7 +619,7 @@ export default function Editor() {
           {configured && user && (
             <>
               <span>{user.email}</span>
-              {!isSubscriber && (
+              {!isPremium && (
                 <Link href="/precios" className={styles.accountLink}>
                   Sin anuncios
                 </Link>
@@ -646,7 +668,7 @@ export default function Editor() {
               elements={elements}
               background={background}
               backgroundColor={backgroundColor}
-              showWatermark={!isSubscriber}
+              showWatermark={!isPremium}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onChange={patchElement}
@@ -1032,7 +1054,7 @@ export default function Editor() {
             </div>
 
             {/* premium: bloques de desbloqueo (al final del panel) */}
-            {isSubscriber ? (
+            {isPremium ? (
               <div className={styles.premiumBox}>
                 <span className={styles.premiumAllOn}>
                   ✓ Plan sin anuncios · todo desbloqueado

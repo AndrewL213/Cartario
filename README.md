@@ -42,6 +42,7 @@ Ejecuta, en orden, en Supabase → SQL Editor:
 1. `supabase/migrations/0001_init.sql` — `profiles` y `cards` (con RLS).
 2. `supabase/migrations/0002_storage.sql` — bucket `card-images` para imágenes propias.
 3. `supabase/migrations/0003_stripe.sql` — columnas de Stripe en `profiles`.
+4. `supabase/migrations/0004_fase1_datos.sql` — Fase 1: `is_premium`, `display_name`, `cards.status` y las tablas `ad_unlocks`, `sent_cards`, `ai_generations`, todo con RLS. Es idempotente y ya incluye lo de 0003, así que se puede correr aunque 0003 no se haya ejecutado.
 
 En Authentication → URL Configuration añade `http://localhost:3000/**`.
 
@@ -83,7 +84,7 @@ Dos bloques, desbloqueables **por carta** con un anuncio corto (máx. 2 por cart
 | **Contenido** | stickers premium e imágenes propias **sin límite** (gratis: 3 por carta) |
 | **Estilo** | tipografías premium y fondos premium |
 
-Con Premium todo queda abierto en todas las cartas. Quien no es Premium ve la
+Los desbloqueos se guardan en la base (`ad_unlocks`) y el tope de 2 por carta lo hace cumplir la propia base. Con Premium (`profiles.is_premium`, lo escribe solo el webhook de Stripe) todo queda abierto en todas las cartas. Quien no es Premium ve la
 marca de agua "Hecho con Cartario" (abajo a la derecha), que queda en el PNG; antes
 de descargar hay un aviso con "Descargar igual", "Ver planes" y "Cancelar".
 
@@ -93,8 +94,8 @@ conecta en un único punto (`showRewardedAd`) en la Fase 5.
 ## Estado por fases
 
 - **Fase 0 — Renombrado y auditoría**: hecha.
-- Fase 1 — Cuentas, datos y suscripción (`profiles`, `cards`, `ad_unlocks`,
-  `sent_cards`, `ai_generations`; RLS; migración de invitado; `is_premium`).
+- **Fase 1 — Cuentas, datos y suscripción**: hecha (`profiles`, `cards`, `ad_unlocks`,
+  `sent_cards`, `ai_generations`; RLS; el borrador de invitado pasa solo a la cuenta; `is_premium`).
 - Fase 2 — Embeds y página de recepción `/c/[id]` (sin anuncios).
 - Fase 3 — Agente de Cartario (IA, 3 generaciones al día).
 - Fase 4 — Biblioteca (creadas, enviadas, recibidas) y envío programado.
@@ -102,8 +103,6 @@ conecta en un único punto (`showRewardedAd`) en la Fase 5.
   Stripe, anuncios laterales del agente).
 - Fase 6 — Compartir en redes, medición y pulido móvil.
 
-Hoy el editor y la base usan el esquema inicial (`cards`, y `profiles.is_subscriber`
-en lugar de `is_premium`); la Fase 1 los migra.
 
 ## Stack
 

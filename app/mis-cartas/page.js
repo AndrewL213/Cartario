@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "../../lib/supabase/server";
 import DeleteCardButton from "../../components/DeleteCardButton";
+import GuestDraftMigrator from "../../components/GuestDraftMigrator";
 import styles from "./misCartas.module.css";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,7 @@ export default async function MisCartasPage() {
 
   return (
     <main className={styles.main}>
+      <GuestDraftMigrator userId={user.id} />
       <div className={styles.topBar}>
         <Link href="/" className={styles.back}>
           ← Cartario

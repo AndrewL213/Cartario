@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function PreciosPage({ searchParams }) {
   const checkout = searchParams?.checkout;
-  let isSubscriber = false;
+  let isPremium = false;
   const supabase = getSupabaseServer();
   if (supabase) {
     const {
@@ -21,10 +21,10 @@ export default async function PreciosPage({ searchParams }) {
     if (user) {
       const { data: prof } = await supabase
         .from("profiles")
-        .select("is_subscriber")
+        .select("is_premium")
         .eq("id", user.id)
         .maybeSingle();
-      isSubscriber = !!prof?.is_subscriber;
+      isPremium = !!prof?.is_premium;
     }
   }
 
@@ -96,7 +96,7 @@ export default async function PreciosPage({ searchParams }) {
               <span className={styles.muted}>(próximamente)</span>
             </li>
           </ul>
-          {isSubscriber ? (
+          {isPremium ? (
             <>
               <span className={styles.currentBtn}>Ya estás suscrito ✓</span>
               <ManageSubscriptionButton className={styles.subscribeBtn} />

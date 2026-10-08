@@ -11,8 +11,8 @@ export const runtime = "nodejs";
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
 
 async function setSubscription(admin, { customerId, userId, status }) {
-  const isSubscriber = ACTIVE_STATUSES.has(status);
-  const patch = { is_subscriber: isSubscriber, subscription_status: status };
+  const isPremium = ACTIVE_STATUSES.has(status);
+  const patch = { is_premium: isPremium, subscription_status: status };
 
   let q = admin.from("profiles").update(patch);
   if (userId) q = q.eq("id", userId);
