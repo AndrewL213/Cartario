@@ -80,7 +80,7 @@ Dos bloques, desbloqueables **por carta** con un anuncio corto (máx. 2 por cart
 
 | Bloque | Abre |
 |---|---|
-| **Contenido** | stickers premium y subir más de 3 imágenes (3 por carta gratis) |
+| **Contenido** | stickers premium e imágenes propias **sin límite** (gratis: 3 por carta) |
 | **Estilo** | tipografías premium y fondos premium |
 
 Con Premium todo queda abierto en todas las cartas. Quien no es Premium ve la
